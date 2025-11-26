@@ -1,7 +1,7 @@
 //come back later, add more types, remove unnecessary string typing
 
 #[derive(Debug)]
-pub enum token {
+pub enum Token {
     //keywords
     Print(String),
     Int(String),
@@ -58,6 +58,8 @@ impl Token {
             "RightParen" => Token::RightParen(")".to_string()),
             "LeftBrace" => Token::RightBrace("{".to_string()),
             "RightBrace" => Token::LeftBrace("}".to_string()),
+            "GreaterThan" => Token::GreaterThan(">".to_string()),
+            "LessThan" => Token::LessThan("<".to_string()),
             _ => panic!("Token does not match a defined type: Token {}", token_type),
         }
     }
@@ -78,6 +80,8 @@ impl Token {
             "RightParen" => r")",
             "LeftBrace" => r"{",
             "RightBrace" => r"}",
+            "GreaterThan" => r">",
+            "LessThan" => r"<",
             _ => panic!("Token does not match defined type: Token {}", token_type),
         }
         .to_string()

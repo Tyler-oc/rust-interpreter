@@ -1,3 +1,24 @@
+mod lexing;
+
+use lexing::lexer::lex_program;
+use lexing::token::Token;
+
+const PROGRAM: &str = "
+int x = 5;
+int y = 6;
+int z = x + y;
+
+if (z > 10) {
+    print(\"Hello, world!\");
+} else {
+    print(\"Goodbye, world!\");
+}
+";
+
 fn main() {
-    println!("Hello, world!");
+    let tokens: Vec<Token> = lex_program(PROGRAM);
+
+    for token in tokens.iter() {
+        println!("{:?}", token);
+    }
 }
