@@ -5,4 +5,4 @@ edition = "2024"
 
 [dependencies]
 
-regex="1" #note that 1 gets the latest version, you can also put in the extact verion here
+regex="1"

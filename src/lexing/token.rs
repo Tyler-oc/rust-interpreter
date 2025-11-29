@@ -1,5 +1,3 @@
-//come back later, add more types, remove unnecessary string typing
-
 #[derive(Debug)]
 pub enum Token {
     //keywords
@@ -73,13 +71,13 @@ impl Token {
             "IntegerLiteral" => r"\d+",
             "StringLiteral" => r#"\".*\""#,
             "Identifier" => r"[a-zA-Z_][a-zA-Z0-9_]* =",
-            "Plus" => r"+",
+            "Plus" => r"\+",
             "Assign" => r"=",
             "Semicolon" => r";",
-            "LeftParen" => r"(",
-            "RightParen" => r")",
-            "LeftBrace" => r"{",
-            "RightBrace" => r"}",
+            "LeftParen" => r"\(",
+            "RightParen" => r"\)",
+            "LeftBrace" => r"\{",
+            "RightBrace" => r"\}",
             "GreaterThan" => r">",
             "LessThan" => r"<",
             _ => panic!("Token does not match defined type: Token {}", token_type),
