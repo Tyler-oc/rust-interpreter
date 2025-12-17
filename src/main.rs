@@ -17,12 +17,18 @@ fn process_args() -> Option<String> {
 //file input (make sure to actually extract the text from the file)
 fn run_file(program_file: &str) {
     let bytes = fs::read(program_file);
-    let bytes = bytes.ok().unwrap();
-    let program = String::from_utf8_lossy(&bytes);
-    let tokens: Vec<Token> = lex_program(&program);
 
-    for token in tokens.iter() {
-        println!("{:?}", token);
+    match bytes {
+        Ok(file_bytes) => {
+            let program: std::borrow::Cow<'_, str> = String::from_utf8_lossy(&file_bytes);
+            let tokens: Vec<Token> = lex_program(&program);
+            for token in tokens.iter() {
+                println!("{:?}", token);
+            }
+        }
+        Err(e) => {
+            println!("Error reading the specified path");
+        }
     }
 }
 
