@@ -9,15 +9,15 @@ pub enum Token {
     For(String),
     While(String),
     Null(String),
-
-    //boolean operators
-    And(String),
-    Or(String),
+    And(String), //can switch to && later
+    Or(String),  //can switch to || later
     True(bool),
     False(bool),
-
-    //function
     Fun(String),
+    Class(String),
+    Super(String),
+    Return(String),
+    This(String),
 
     //literal
     IntegerLiteral(i32),
@@ -66,6 +66,10 @@ impl Token {
             "True" => Token::True(true),
             "False" => Token::False(false),
             "Fun" => Token::Fun("fun".to_string()),
+            "Class" => Token::Class("class".to_string()),
+            "Super" => Token::Super("super".to_string()),
+            "Return" => Token::Return("return".to_string()),
+            "This" => Token::This("this".to_string()),
             "IntegerLiteral" => Token::IntegerLiteral(match value {
                 Some(v) => v.parse::<i32>().unwrap(),
                 None => panic!("IntegerLiteral missing value"),
@@ -113,6 +117,10 @@ impl Token {
             "True" => r"\btrue\b",
             "False" => r"\bfalse\b",
             "Fun" => r"\bfun\b",
+            "Class" => r"\bclass\b",
+            "Super" => r"\bsuper\b",
+            "Return" => r"\breturn\b",
+            "This" => r"\bthis\b",
             "IntegerLiteral" => r"\d+",
             "StringLiteral" => r#""([^"\\]|\\.)*""#,
             "Identifier" => r"[a-zA-Z_][a-zA-Z0-9_]*",
