@@ -5,7 +5,7 @@ use lexing::token::Token;
 use std::env;
 use std::fs;
 
-//note the max line is u32 max, so don't write a program with 4 million lines
+//error handling but make sure to pass in specific errors which are defined in the errors crate.
 pub fn error(line: &u32, message: &str) {
     report(line, "", message);
 }
