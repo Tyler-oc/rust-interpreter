@@ -1,3 +1,4 @@
+mod errors;
 mod lexing;
 
 use lexing::lexer::lex_program;

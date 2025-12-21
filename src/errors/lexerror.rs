@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fmt;
 
 #[derive(Debug)]
-enum LexError {
+pub enum LexError {
     NotFound(String),
 }
 

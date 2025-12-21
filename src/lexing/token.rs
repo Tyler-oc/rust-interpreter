@@ -1,5 +1,4 @@
 use crate::errors::lexerror::LexError;
-
 #[derive(Debug)]
 pub enum Token {
     //keywords
@@ -100,7 +99,7 @@ impl Token {
             "Bang" => Token::Bang("!".to_string()),
             "BangEqual" => Token::BangEqual("!=".to_string()),
             "EqualEqual" => Token::EqualEqual("==".to_string()),
-            _ => LexError(token_type),
+            _ => LexError::NotFound(token_type),
         }
     }
 
@@ -142,7 +141,7 @@ impl Token {
             "Bang" => r"\!",
             "BangEqual" => r"\!=",
             "EqualEqual" => r"==",
-            _ => LexError(token_type),
+            _ => LexError::NotFound(token_type),
         }
         .to_string()
     }
