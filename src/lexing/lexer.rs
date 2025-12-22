@@ -1,4 +1,4 @@
-use crate::lexing::token::Token;
+use crate::{errors::lexerror::LexError, lexing::token::Token};
 use regex::Regex;
 
 pub fn lex_program(program: &str) -> Vec<Token> {
@@ -48,7 +48,11 @@ pub fn lex_program(program: &str) -> Vec<Token> {
     let mut match_vec: Vec<(&str, usize, usize)> = Vec::new();
 
     for token in tokens.iter() {
-        let token_regex = Token::get_token_regex(token);
+        let token_regex = get_token_regex(token);
+        match token_regex {
+            Ok(token) => ,
+            Err(e: ) => LexError::NotFound(e),
+        };
         let re = Regex::new(token_regex.as_str()).unwrap();
         let matched = re.find_iter(current_input);
 
