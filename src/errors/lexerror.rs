@@ -5,6 +5,7 @@ use std::fmt;
 pub enum LexError {
     NotFound(String),
     ValueError(String),
+    UnexpectedCharacter { char: char, line: usize },
 }
 
 impl fmt::Display for LexError {
@@ -12,6 +13,9 @@ impl fmt::Display for LexError {
         match self {
             LexError::NotFound(token) => write!(f, "invalid token: {}", token),
             LexError::ValueError(token_type) => write!(f, "no value found for {}", token_type),
+            LexError::UnexpectedCharacter { char, line } => {
+                write!(f, "unexpected character {} on line {}", char, line)
+            }
         }
     }
 }

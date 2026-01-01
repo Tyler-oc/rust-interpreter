@@ -1,4 +1,4 @@
-use crate::lexing::token::Token;
+use crate::{errors::lexerror::LexError, lexing::token::Token};
 use regex::Regex;
 
 // //TODO: can't be global matching has to be anchored to index
@@ -113,33 +113,101 @@ impl<'a> Lexer<'a> {
         c
     }
 
+    fn peek(&mut self) -> char {
+        let c = self.source.as_bytes()[self.current] as char;
+        c
+    }
+
+    fn match_char(&mut self, c: char) -> bool {
+        if self.peek() == c {
+            return true;
+        }
+        false
+    }
+
     fn add_token(&mut self, token: Token) {
         self.tokens.push(token);
     }
 
-    fn scan_token(&mut self) {
+    fn increment_line(&mut self) {
+        self.line += 1
+    }
+
+    fn scan_token(&mut self) -> Result<(), LexError> {
         let c = self.advance();
 
-        match c {
+        let a = match c {
+            '\n' => self.increment_line(),
             '(' => self.add_token(Token::LeftParen),
             ')' => self.add_token(Token::RightParen),
             '{' => self.add_token(Token::LeftBrace),
             '}' => self.add_token(Token::RightBrace),
             '+' => self.add_token(Token::Plus),
             '-' => self.add_token(Token::Minus),
-            '/' => self.add_token(Token::Slash),
             '*' => self.add_token(Token::Star),
-        }
+            '.' => self.add_token(Token::Dot),
+            ';' => self.add_token(Token::Semicolon),
+            ',' => self.add_token(Token::Comma),
+            '!' => {
+                if self.match_char('=') {
+                    self.add_token(Token::BangEqual);
+                    self.advance();
+                } else {
+                    self.add_token(Token::Bang);
+                }
+            }
+            '=' => {
+                if self.match_char('=') {
+                    self.add_token(Token::EqualEqual);
+                    self.advance();
+                } else {
+                    self.add_token(Token::Equal);
+                }
+            }
+            '<' => {
+                if self.match_char('=') {
+                    self.add_token(Token::LessEqual);
+                    self.advance();
+                } else {
+                    self.add_token(Token::LessThan);
+                }
+            }
+            '>' => {
+                if self.match_char('=') {
+                    self.add_token(Token::GreaterEqual);
+                    self.advance();
+                } else {
+                    self.add_token(Token::GreaterThan);
+                }
+            }
+            '/' => {
+                if self.match_char('/') {
+                    while self.peek() != '\n' && !self.is_at_end() {
+                        self.advance();
+                    }
+                } else {
+                    self.add_token(Token::Slash);
+                }
+            }
+            ' ' => (),
+            _ => {
+                return Err(LexError::UnexpectedCharacter {
+                    char: c,
+                    line: self.line,
+                });
+            }
+        };
+        Ok(())
     }
 }
 
-pub fn lex_program(source: &str) -> Vec<Token> {
+pub fn lex_program(source: &str) -> Result<Vec<Token>, LexError> {
     let mut lexer = Lexer::new(source);
 
     while !lexer.is_at_end() {
         lexer.start = lexer.current;
-        lexer.scan_token();
+        lexer.scan_token()?;
     }
 
-    lexer.tokens
+    Ok(lexer.tokens)
 }

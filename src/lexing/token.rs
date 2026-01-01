@@ -30,7 +30,8 @@ pub enum Token {
     Dot, //property calls
     Slash,
     Star,
-    Equals,
+    Equal,
+    Comma,
 
     //punctuation
     Semicolon,
