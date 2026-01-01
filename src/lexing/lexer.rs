@@ -119,6 +119,9 @@ impl<'a> Lexer<'a> {
     }
 
     fn match_char(&mut self, c: char) -> bool {
+        if self.is_at_end() {
+            return false;
+        }
         if self.peek() == c {
             return true;
         }
@@ -133,10 +136,30 @@ impl<'a> Lexer<'a> {
         self.line += 1
     }
 
+    fn string(&mut self) -> Result<(), LexError> {
+        while self.peek() != '"' && !self.is_at_end() {
+            if self.peek() == '\n' {
+                self.increment_line()
+            };
+            self.advance();
+        }
+
+        if self.is_at_end() {
+            return Err(LexError::UnterminatedString { line: self.line });
+        }
+
+        self.advance();
+
+        let value = &self.source[self.start + 1..self.current - 1]; //note this only works if all values are ASCII, which is assumed. Panics otherwise
+
+        self.add_token(Token::StringLiteral(value.to_string()));
+        Ok(())
+    }
+
     fn scan_token(&mut self) -> Result<(), LexError> {
         let c = self.advance();
 
-        let a = match c {
+        match c {
             '\n' => self.increment_line(),
             '(' => self.add_token(Token::LeftParen),
             ')' => self.add_token(Token::RightParen),
@@ -189,6 +212,15 @@ impl<'a> Lexer<'a> {
                     self.add_token(Token::Slash);
                 }
             }
+            '"' => {
+                let result = self.string();
+                match result {
+                    Ok(_) => (),
+                    Err(e) => return Err(e),
+                }
+            }
+            '\r' => (),
+            '\t' => (),
             ' ' => (),
             _ => {
                 return Err(LexError::UnexpectedCharacter {

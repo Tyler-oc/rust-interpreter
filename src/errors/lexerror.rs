@@ -6,6 +6,7 @@ pub enum LexError {
     NotFound(String),
     ValueError(String),
     UnexpectedCharacter { char: char, line: usize },
+    UnterminatedString { line: usize },
 }
 
 impl fmt::Display for LexError {
@@ -15,6 +16,9 @@ impl fmt::Display for LexError {
             LexError::ValueError(token_type) => write!(f, "no value found for {}", token_type),
             LexError::UnexpectedCharacter { char, line } => {
                 write!(f, "unexpected character {} on line {}", char, line)
+            }
+            LexError::UnterminatedString { line } => {
+                write!(f, "unterminated string at line: {}", line)
             }
         }
     }
