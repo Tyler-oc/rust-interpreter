@@ -24,19 +24,13 @@ fn process_args() -> Option<String> {
 }
 
 //file input
-fn run_file(program_file: &str) {
+fn run_file(program_file: &str) -> Result<(), InterpreterError> {
     let bytes = fs::read(program_file);
 
     match bytes {
         Ok(file_bytes) => {
             let program: std::borrow::Cow<'_, str> = String::from_utf8_lossy(&file_bytes);
-            let tokens: Vec<Token> = match lex_program(&program) {
-                Ok(tokens) => tokens,
-                Err(e) => {
-                    error(errors::interpreterError::InterpreterError::LexError(e));
-                    Vec::new()
-                }
-            };
+            let tokens: Vec<Token> = lex_program(&program)?;
             for token in tokens.iter() {
                 println!("{:?}", token);
             }
@@ -45,6 +39,7 @@ fn run_file(program_file: &str) {
             println!("Error: {e}");
         }
     }
+    Ok(())
 }
 
 //CLI listening
@@ -58,7 +53,7 @@ fn run_prompt() {
     let tokens: Vec<Token> = match lex_program(&input) {
         Ok(tokens) => tokens,
         Err(e) => {
-            error(errors::interpreterError::InterpreterError::LexError(e));
+            error(InterpreterError::LexError(e));
             Vec::new()
         }
     };
@@ -71,7 +66,10 @@ fn run_prompt() {
 fn main() {
     let program_file: Option<String> = process_args();
     match program_file {
-        Some(p) => run_file(&p),
+        Some(p) => match run_file(&p) {
+            Ok(_) => (),
+            Err(e) => error(e),
+        },
         None => run_prompt(),
     }
 }

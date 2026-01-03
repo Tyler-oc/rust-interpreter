@@ -19,4 +19,23 @@ impl std::fmt::Display for InterpreterError {
     }
 }
 
-impl Error for InterpreterError {}
+impl Error for InterpreterError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            InterpreterError::LexError(e) => Some(e),
+            InterpreterError::ParseError(e) => Some(e),
+        }
+    }
+}
+
+impl From<LexError> for InterpreterError {
+    fn from(value: LexError) -> Self {
+        InterpreterError::LexError(value)
+    }
+}
+
+impl From<ParseError> for InterpreterError {
+    fn from(value: ParseError) -> Self {
+        InterpreterError::ParseError(value)
+    }
+}
