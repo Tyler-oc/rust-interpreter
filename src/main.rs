@@ -7,13 +7,11 @@ use lexing::token::Token;
 use std::env;
 use std::fs;
 
-//error handling but make sure to pass in specific errors which are defined in the errors crate.
-pub fn error(line: &u32, message: &str) {
-    report(line, "", message);
-}
+use crate::errors::interpreterError::InterpreterError;
 
-fn report(line: &u32, where_at: &str, message: &str) {
-    panic!("Error on line {line} at {where_at}: {message}");
+//error handling but make sure to pass in specific errors which are defined in the errors crate.
+pub fn error(e: InterpreterError) {
+    e;
 }
 
 fn process_args() -> Option<String> {
@@ -32,7 +30,13 @@ fn run_file(program_file: &str) {
     match bytes {
         Ok(file_bytes) => {
             let program: std::borrow::Cow<'_, str> = String::from_utf8_lossy(&file_bytes);
-            let tokens: Vec<Token> = lex_program(&program);
+            let tokens: Vec<Token> = match lex_program(&program) {
+                Ok(tokens) => tokens,
+                Err(e) => {
+                    error(errors::interpreterError::InterpreterError::LexError(e));
+                    Vec::new()
+                }
+            };
             for token in tokens.iter() {
                 println!("{:?}", token);
             }
@@ -51,7 +55,13 @@ fn run_prompt() {
         .read_line(&mut input)
         .expect("Failed to read line");
 
-    let tokens: Vec<Token> = lex_program(&input);
+    let tokens: Vec<Token> = match lex_program(&input) {
+        Ok(tokens) => tokens,
+        Err(e) => {
+            error(errors::interpreterError::InterpreterError::LexError(e));
+            Vec::new()
+        }
+    };
 
     for token in tokens.iter() {
         println!("{:?}", token);

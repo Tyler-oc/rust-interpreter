@@ -1,88 +1,27 @@
-use crate::{errors::lexerror::LexError, lexing::token::Token};
-use regex::Regex;
+use crate::{errors::lexError::LexError, lexing::token::Token};
+use once_cell::sync::Lazy;
+use std::{clone, collections::HashMap, ptr::null};
 
-// //TODO: can't be global matching has to be anchored to index
-// pub fn lex_program(program: &str) -> Vec<Token> {
-//     let current_input = program;
-
-//     //highest to lowest priority
-//     //ADD NEW TOKENS
-//     let tokens = [
-//         "Print",
-//         "If",
-//         "Else",
-//         "While",
-//         "For",
-//         "Fun",
-//         "Class",
-//         "Super",
-//         "Return",
-//         "This",
-//         "And",
-//         "Or",
-//         "Null",
-//         "Plus",
-//         "Minus",
-//         "Star",
-//         "Slash",
-//         "Dot",
-//         "Assign",
-//         "Semicolon",
-//         "LeftParen",
-//         "RightParen",
-//         "LeftBrace",
-//         "RightBrace",
-//         "Bang",
-//         "BangEqual",
-//         "GreaterEqual",
-//         "LessEqual",
-//         "EqualEqual",
-//         "GreaterThan",
-//         "LessThan",
-//         "IntegerLiteral",
-//         "StringLiteral",
-//         "True",
-//         "False",
-//         "Identifier",
-//     ];
-
-//     let mut match_vec: Vec<(&str, usize, usize)> = Vec::new();
-
-//     for token in tokens.iter() {
-//         let token_regex = Token::get_token_regex(token);
-//         match token_regex {
-//             Ok(t) => {
-//                 let re = Regex::new(t.as_str()).unwrap();
-//                 let matched = re.find_iter(current_input);
-
-//                 let all_matches = matched.collect::<Vec<_>>();
-
-//                 if all_matches.len() == 0 {
-//                     continue;
-//                 }
-
-//                 for m in all_matches.iter() {
-//                     match_vec.push((token, m.start(), m.end()));
-//                 }
-//             }
-//             Err(e) => eprintln!("{}", e),
-//         };
-//     }
-
-//     match_vec.sort_by(|a, b| a.1.cmp(&b.1).then_with(|| (b.2 - b.1).cmp(&(a.2 - a.1))));
-
-//     let mut token_vec: Vec<Token> = Vec::new();
-//     for m in match_vec.iter() {
-//         let token = Token::get_token(m.0, Some(&current_input[m.1..m.2]));
-//         match token {
-//             Ok(t) => token_vec.push(t),
-//             Err(e) => eprintln!("{}", e),
-//         }
-//         //token_vec.push(Token::get_token(m.0, Some(&current_input[m.1..m.2])));
-//     }
-
-//     return token_vec;
-// }
+static KEYWORDS: Lazy<HashMap<&'static str, Token>> = Lazy::new(|| {
+    let mut m = HashMap::new();
+    m.insert("and", Token::And);
+    m.insert("class", Token::Class);
+    m.insert("else", Token::Else);
+    m.insert("false", Token::Boolean(false));
+    m.insert("for", Token::For);
+    m.insert("fun", Token::Fun);
+    m.insert("if", Token::If);
+    m.insert("null", Token::Null);
+    m.insert("or", Token::Or);
+    m.insert("print", Token::Print);
+    m.insert("return", Token::Return);
+    m.insert("super", Token::Super);
+    m.insert("this", Token::This);
+    m.insert("true", Token::Boolean(true));
+    m.insert("var", Token::Var);
+    m.insert("while", Token::While);
+    m
+});
 
 struct Lexer<'a> {
     source: &'a str,
@@ -143,10 +82,6 @@ impl<'a> Lexer<'a> {
         self.line += 1
     }
 
-    fn is_digit(&mut self, c: char) -> bool {
-        return c >= '0' && c <= '9';
-    }
-
     fn string(&mut self) -> Result<(), LexError> {
         while self.peek() != '"' && !self.is_at_end() {
             if self.peek() == '\n' {
@@ -168,14 +103,13 @@ impl<'a> Lexer<'a> {
     }
 
     fn number(&mut self) -> Result<(), LexError> {
-        while self.is_digit(self.peek()) {
+        while is_digit(self.peek()) {
             self.advance();
         }
 
-        if self.peek() == '.' && self.is_digit(self.peek_next()) {
+        if self.peek() == '.' && is_digit(self.peek_next()) {
             self.advance();
-
-            while self.is_digit(self.peek()) {
+            while is_digit(self.peek()) {
                 self.advance();
             }
         }
@@ -193,6 +127,20 @@ impl<'a> Lexer<'a> {
             Err(e) => return Err(e),
         };
         Ok(())
+    }
+
+    fn identifier(&mut self) -> () {
+        while is_alphanumeric(self.peek()) {
+            self.advance();
+        }
+
+        let text = &self.source[self.start..self.current];
+        let token_type = match KEYWORDS.get(text) {
+            Some(t) => t,
+            None => &Token::Identifier(text.to_string()),
+        };
+
+        self.add_token(token_type.clone());
     }
 
     fn scan_token(&mut self) -> Result<(), LexError> {
@@ -262,8 +210,10 @@ impl<'a> Lexer<'a> {
             '\t' => (),
             ' ' => (),
             _ => {
-                if self.is_digit(c) {
+                if is_digit(c) {
                     self.number();
+                } else if is_alpha(c) {
+                    self.identifier();
                 } else {
                     return Err(LexError::UnexpectedCharacter {
                         char: c,
@@ -274,6 +224,18 @@ impl<'a> Lexer<'a> {
         };
         Ok(())
     }
+}
+
+fn is_digit(c: char) -> bool {
+    return c >= '0' && c <= '9';
+}
+
+fn is_alpha(c: char) -> bool {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_');
+}
+
+fn is_alphanumeric(c: char) -> bool {
+    return is_alpha(c) || is_digit(c);
 }
 
 pub fn lex_program(source: &str) -> Result<Vec<Token>, LexError> {
