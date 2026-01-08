@@ -1,4 +1,4 @@
-use crate::{errors::lexError::LexError, lexing::token::Token};
+use crate::{errors::lex_error::LexError, lexing::token::Token};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
@@ -249,6 +249,8 @@ pub fn lex_program(source: &str) -> Result<Vec<Token>, LexError> {
         lexer.start = lexer.current;
         lexer.scan_token()?;
     }
+
+    lexer.add_token(Token::EOF);
 
     Ok(lexer.tokens)
 }

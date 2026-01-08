@@ -4,6 +4,7 @@ use std::fmt;
 #[derive(Debug)]
 pub enum ParseError {
     InvalidConversion(String),
+    IndexOutOfBounds,
 }
 
 impl std::fmt::Display for ParseError {
@@ -12,6 +13,7 @@ impl std::fmt::Display for ParseError {
             ParseError::InvalidConversion(invalid_obj) => {
                 write!(f, "ParseError: Conversion Error: {}", invalid_obj)
             }
+            ParseError::IndexOutOfBounds => write!(f, "Index out of bounds"),
         }
     }
 }

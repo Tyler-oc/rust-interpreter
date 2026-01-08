@@ -1,8 +1,8 @@
 use std::error::Error;
 use std::fmt;
 
-use crate::errors::lexError::LexError;
-use crate::errors::parseError::ParseError;
+use crate::errors::lex_error::LexError;
+use crate::errors::parse_error::ParseError;
 
 #[derive(Debug)]
 pub enum InterpreterError {

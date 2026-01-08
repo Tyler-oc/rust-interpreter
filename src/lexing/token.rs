@@ -1,4 +1,4 @@
-use crate::errors::lexError::LexError;
+use crate::errors::lex_error::LexError;
 #[derive(Clone, Debug)]
 pub enum Token {
     //keywords
@@ -49,6 +49,8 @@ pub enum Token {
     Bang,
     BangEqual,
     EqualEqual,
+
+    EOF,
 }
 
 impl Token {}

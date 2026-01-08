@@ -7,7 +7,7 @@ use lexing::token::Token;
 use std::env;
 use std::fs;
 
-use crate::errors::interpreterError::InterpreterError;
+use crate::errors::interpreter_error::InterpreterError;
 
 //error handling but make sure to pass in specific errors which are defined in the errors crate.
 pub fn error(e: InterpreterError) {

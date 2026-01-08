@@ -1,4 +1,3 @@
-pub mod interpreterError;
-pub mod interpretererror;
-pub mod lexError;
-pub mod parseError;
+pub mod interpreter_error;
+pub mod lex_error;
+pub mod parse_error;
