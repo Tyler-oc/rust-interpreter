@@ -57,19 +57,74 @@ impl<'a> Parser<'a> {
         return false;
     }
 
+    fn primary(&mut self) => Result<Expr, ParseError> {
+        if self.match_token(vec![Token::Boolean]) {
+            return Ok(Literal::Boolean(false))
+        }
+    }
+
+    fn unary(&mut self) -> Result<Expr, ParseError> {
+        if self.match_token(vec![Token::Bang, Token::Minus]) {
+            let operator: UnaryOp = match parse_unary_op(self.previous()) {
+                Ok(b) => b,
+                Err(e) => return Err(e),
+            };
+            let right: Expr = match self.unary() {
+                Ok(e) => e,
+                Err(err) => return Err(e),
+            };
+            return Ok(Expr::Unary {
+                exp: Box::new(right),
+                op: operator,
+            });
+        }
+        self.primary()
+    }
+
+    fn factor(&mut self) -> Result<Expr, ParseError> {
+        let mut expr: Expr = match self.unary() {
+            Ok(e) => e,
+            Err(err) => return Err(err),
+        };
+
+        while self.match_token(vec![Token::Slash, Token::Star]) {
+            let operator: BinaryOp = match parse_binary_op(self.previous()) {
+                Ok(b) => b,
+                Err(e) => return Err(e),
+            };
+            let right: Expr = match self.unary() {
+                Ok(e) => e,
+                Err(err) => return Err(err),
+            };
+            expr = Expr::Binary {
+                left: Box::new(expr),
+                op: operator,
+                right: Box::new(right),
+            }
+        }
+
+        Ok(expr)
+    }
+
     fn term(&mut self) -> Result<Expr, ParseError> {
-        let mut expr: Expr = self.factor();
+        let mut expr: Expr = match self.factor() {
+            Ok(e) => e,
+            Err(err) => return Err(err),
+        };
 
         while self.match_token(vec![Token::Minus, Token::Plus]) {
             let operator: BinaryOp = match parse_binary_op(self.previous()) {
                 Ok(b) => b,
                 Err(e) => return Err(e),
             };
-            let right: Expr = self.factor();
+            let right: Expr = match self.factor() {
+                Ok(e) => e,
+                Err(err) => return Err(err),
+            };
             expr = Expr::Binary {
-                left: expr,
+                left: Box::new(expr),
                 op: operator,
-                right: right,
+                right: Box::new(right),
             }
         }
 
