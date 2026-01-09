@@ -77,7 +77,10 @@ impl<'a> Parser<'a> {
     }
 
     fn comparison(&mut self) -> Result<Expr, ParseError> {
-        let mut expr: Expr = self.term();
+        let mut expr: Expr = match self.term() {
+            Ok(e) => e,
+            Err(err) => return Err(err),
+        };
 
         while self.match_token(vec![
             Token::GreaterEqual,
@@ -89,11 +92,14 @@ impl<'a> Parser<'a> {
                 Ok(b) => b,
                 Err(e) => return Err(e),
             };
-            let right: Expr = self.term();
+            let right: Expr = match self.term() {
+                Ok(e) => e,
+                Err(err) => return Err(err),
+            };
             expr = Expr::Binary {
-                left: expr,
+                left: Box::new(expr),
                 op: operator,
-                right: right,
+                right: Box::new(right),
             }
         }
 
@@ -101,26 +107,35 @@ impl<'a> Parser<'a> {
     }
 
     fn equality(&mut self) -> Result<Expr, ParseError> {
-        let mut expr: Expr = self.comparison();
+        let mut expr: Expr = match self.comparison() {
+            Ok(e) => e,
+            Err(err) => return Err(err),
+        };
 
         while self.match_token(vec![Token::EqualEqual, Token::BangEqual]) {
-            let operator: &Token = match parse_binary_op(self.previous()) {
+            let operator: BinaryOp = match parse_binary_op(self.previous()) {
                 Ok(b) => b,
                 Err(e) => return Err(e),
             };
-            let right: Expr = self.comparison();
+            let right: Expr = match self.comparison() {
+                Ok(e) => e,
+                Err(err) => return Err(err),
+            };
             expr = Expr::Binary {
-                left: expr,
+                left: Box::new(expr),
                 op: operator,
-                right: right,
+                right: Box::new(right),
             }
         }
 
         Ok(expr)
     }
 
-    pub fn parse(&mut self) -> Expr {
-        self.equality()
+    pub fn parse(&mut self) -> Result<Expr, ParseError> {
+        match self.equality() {
+            Ok(e) => Ok(e),
+            Err(err) => return Err(err),
+        }
     }
 }
 
