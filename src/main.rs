@@ -8,6 +8,8 @@ use std::env;
 use std::fs;
 
 use crate::errors::interpreter_error::InterpreterError;
+use crate::parsing::ast::Expr;
+use crate::parsing::parser::parse_tokens;
 
 //error handling but make sure to pass in specific errors which are defined in the errors crate.
 pub fn error(e: InterpreterError) {
@@ -34,6 +36,8 @@ fn run_file(program_file: &str) -> Result<(), InterpreterError> {
             for token in tokens.iter() {
                 println!("{:?}", token);
             }
+            let expr: Expr = parse_tokens(&tokens)?;
+            print!("{}", expr);
         }
         Err(e) => {
             println!("Error: {e}");

@@ -57,9 +57,28 @@ impl<'a> Parser<'a> {
         return false;
     }
 
-    fn primary(&mut self) => Result<Expr, ParseError> {
-        if self.match_token(vec![Token::Boolean]) {
-            return Ok(Literal::Boolean(false))
+    fn consume(&mut self, token_type: Token, message: String) -> Result<&Token, ParseError> {
+        if self.match_token(vec![token_type]) {
+            return Ok(self.advance());
+        }
+        Err(ParseError::InvalidGrouping(message))
+    }
+
+    fn primary(&mut self) -> Result<Expr, ParseError> {
+        if self.match_token(vec![Token::LeftParen]) {
+            let expr: Expr = match self.expression() {
+                Ok(e) => e,
+                Err(err) => return Err(err),
+            };
+            self.consume(Token::RightParen, "Expect ')' after expression".to_string());
+            return Ok(Expr::Grouping {
+                exp: Box::new(expr),
+            });
+        }
+
+        match parse_literal(self.peek()) {
+            Ok(l) => Ok(Expr::Literal(l)),
+            Err(e) => Err(e),
         }
     }
 
@@ -71,7 +90,7 @@ impl<'a> Parser<'a> {
             };
             let right: Expr = match self.unary() {
                 Ok(e) => e,
-                Err(err) => return Err(e),
+                Err(err) => return Err(err),
             };
             return Ok(Expr::Unary {
                 exp: Box::new(right),
@@ -186,7 +205,7 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    pub fn parse(&mut self) -> Result<Expr, ParseError> {
+    pub fn expression(&mut self) -> Result<Expr, ParseError> {
         match self.equality() {
             Ok(e) => Ok(e),
             Err(err) => return Err(err),
@@ -194,12 +213,15 @@ impl<'a> Parser<'a> {
     }
 }
 
-pub fn parse_tokens(tokens: &Vec<Token>) -> Expr {
+pub fn parse_tokens(tokens: &Vec<Token>) -> Result<Expr, ParseError> {
     let mut parser: Parser = Parser::new(tokens);
 
-    let expr: Expr = parser.parse();
+    let expr: Expr = match parser.expression() {
+        Ok(e) => e,
+        Err(err) => return Err(err),
+    };
 
-    expr
+    Ok(expr)
 }
 
 pub fn parse_binary_op(token: &Token) -> Result<BinaryOp, ParseError> {
@@ -236,7 +258,8 @@ pub fn parse_literal(token: &Token) -> Result<Literal, ParseError> {
     match token {
         Token::Number(i) => Ok(Literal::Number(*i)),
         Token::StringLiteral(s) => Ok(Literal::StringLiteral(s.clone())),
-        Token::Boolean(b) => Ok(Literal::Boolean(*b)),
+        Token::False => Ok(Literal::False),
+        Token::True => Ok(Literal::True),
         Token::Null => Ok(Literal::Null),
         _ => Err(ParseError::InvalidConversion(
             "could not convert literal".to_string(),

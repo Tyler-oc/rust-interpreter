@@ -7,7 +7,7 @@ static KEYWORDS: Lazy<HashMap<&'static str, Token>> = Lazy::new(|| {
     m.insert("and", Token::And);
     m.insert("class", Token::Class);
     m.insert("else", Token::Else);
-    m.insert("false", Token::Boolean(false));
+    m.insert("false", Token::False);
     m.insert("for", Token::For);
     m.insert("fun", Token::Fun);
     m.insert("if", Token::If);
@@ -17,7 +17,7 @@ static KEYWORDS: Lazy<HashMap<&'static str, Token>> = Lazy::new(|| {
     m.insert("return", Token::Return);
     m.insert("super", Token::Super);
     m.insert("this", Token::This);
-    m.insert("true", Token::Boolean(true));
+    m.insert("true", Token::True);
     m.insert("var", Token::Var);
     m.insert("while", Token::While);
     m
