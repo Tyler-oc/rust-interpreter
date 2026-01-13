@@ -6,6 +6,7 @@ pub enum ParseError {
     InvalidConversion(String),
     IndexOutOfBounds,
     InvalidGrouping(String),
+    MissingValue { val: String, line: usize },
 }
 
 impl std::fmt::Display for ParseError {
@@ -16,6 +17,9 @@ impl std::fmt::Display for ParseError {
             }
             ParseError::IndexOutOfBounds => write!(f, "Index out of bounds"),
             ParseError::InvalidGrouping(message) => write!(f, "{}", message),
+            ParseError::MissingValue { val, line } => {
+                write!(f, "Missing value: {} at line {}", val, line)
+            }
         }
     }
 }

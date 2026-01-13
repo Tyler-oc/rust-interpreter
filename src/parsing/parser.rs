@@ -85,6 +85,7 @@ impl<'a> Parser<'a> {
     }
 
     fn primary(&mut self) -> Result<Expr, ParseError> {
+        println!("primary");
         if self.match_token(vec![TokenKind::LeftParen]) {
             let expr: Expr = match self.expression() {
                 Ok(e) => e,
@@ -109,6 +110,7 @@ impl<'a> Parser<'a> {
     }
 
     fn unary(&mut self) -> Result<Expr, ParseError> {
+        println!("unary");
         if self.match_token(vec![TokenKind::Bang, TokenKind::Minus]) {
             let operator: UnaryOp = match parse_unary_op(self.previous()) {
                 Ok(b) => b,
@@ -127,6 +129,7 @@ impl<'a> Parser<'a> {
     }
 
     fn factor(&mut self) -> Result<Expr, ParseError> {
+        println!("factor");
         let mut expr: Expr = match self.unary() {
             Ok(e) => e,
             Err(err) => return Err(err),
@@ -152,6 +155,7 @@ impl<'a> Parser<'a> {
     }
 
     fn term(&mut self) -> Result<Expr, ParseError> {
+        println!("term");
         let mut expr: Expr = match self.factor() {
             Ok(e) => e,
             Err(err) => return Err(err),
@@ -177,6 +181,7 @@ impl<'a> Parser<'a> {
     }
 
     fn comparison(&mut self) -> Result<Expr, ParseError> {
+        println!("comparison");
         let mut expr: Expr = match self.term() {
             Ok(e) => e,
             Err(err) => return Err(err),
@@ -207,6 +212,7 @@ impl<'a> Parser<'a> {
     }
 
     fn equality(&mut self) -> Result<Expr, ParseError> {
+        println!("Equality");
         let mut expr: Expr = match self.comparison() {
             Ok(e) => e,
             Err(err) => return Err(err),
@@ -232,6 +238,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn expression(&mut self) -> Result<Expr, ParseError> {
+        println!("Expression");
         match self.equality() {
             Ok(e) => Ok(e),
             Err(err) => return Err(err),
@@ -282,13 +289,19 @@ pub fn parse_unary_op(token: &Token) -> Result<UnaryOp, ParseError> {
 
 pub fn parse_literal(token: &Token) -> Result<Literal, ParseError> {
     match token.kind {
-        TokenKind::Number => match token.literal {
-            Some(l) => Ok(l),
-            None => Err(ParseError::MissingValue),
+        TokenKind::Number => match &token.literal {
+            Some(l) => Ok(l.clone()),
+            None => Err(ParseError::MissingValue {
+                val: token.lexeme.clone(),
+                line: token.line,
+            }),
         },
-        TokenKind::StringLiteral => match token.literal {
-            Some(l) => Ok(l),
-            None => Err(ParseError::MissingValue),
+        TokenKind::StringLiteral => match &token.literal {
+            Some(l) => Ok(l.clone()),
+            None => Err(ParseError::MissingValue {
+                val: token.lexeme.clone(),
+                line: token.line,
+            }),
         },
         TokenKind::False => Ok(Literal::False),
         TokenKind::True => Ok(Literal::True),

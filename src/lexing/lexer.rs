@@ -264,7 +264,12 @@ pub fn lex_program(source: &str) -> Result<Vec<Token>, LexError> {
         lexer.scan_token()?;
     }
 
-    lexer.add_token(TokenKind::EOF, None);
+    lexer.tokens.push(Token {
+        kind: TokenKind::EOF,
+        lexeme: "".to_string(),
+        literal: None,
+        line: lexer.line,
+    });
 
     Ok(lexer.tokens)
 }
