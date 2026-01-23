@@ -1,16 +1,51 @@
 use std::error::Error;
 use std::fmt;
+
+use crate::errors::lex_error::LexError;
+use crate::errors::parse_error::ParseError;
+use crate::errors::runtime_error::RunTimeError;
+
 #[derive(Debug)]
 pub enum InterpreterError {
-    CouldNotEval(String),
+    LexError(LexError),
+    ParseError(ParseError),
+    RunTimeError(RunTimeError),
 }
 
-impl fmt::Display for InterpreterError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Display for InterpreterError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            InterpreterError::CouldNotEval(val) => write!(f, "Could not evaluate: {}", val),
+            InterpreterError::LexError(e) => write!(f, "{}", e),
+            InterpreterError::ParseError(e) => write!(f, "{}", e),
+            InterpreterError::RunTimeError(e) => write!(f, "{}", e),
         }
     }
 }
 
-impl Error for InterpreterError {}
+impl Error for InterpreterError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            InterpreterError::LexError(e) => Some(e),
+            InterpreterError::ParseError(e) => Some(e),
+            InterpreterError::RunTimeError(e) => Some(e),
+        }
+    }
+}
+
+impl From<LexError> for InterpreterError {
+    fn from(value: LexError) -> Self {
+        InterpreterError::LexError(value)
+    }
+}
+
+impl From<ParseError> for InterpreterError {
+    fn from(value: ParseError) -> Self {
+        InterpreterError::ParseError(value)
+    }
+}
+
+impl From<RunTimeError> for InterpreterError {
+    fn from(value: RunTimeError) -> Self {
+        InterpreterError::RunTimeError(value)
+    }
+}

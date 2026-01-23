@@ -1,5 +1,5 @@
 use crate::{
-    errors::interpreter_error::InterpreterError,
+    errors::runtime_error::RunTimeError,
     interpreting::value::Value,
     parsing::ast::{BinaryOp, Expr, Literal, UnaryOp},
 };
@@ -9,22 +9,22 @@ struct Interpreter<'a> {
 }
 
 impl<'a> Interpreter<'a> {
-    fn literal(&mut self, literal: Literal) -> Result<Value, InterpreterError> {
+    fn literal(&mut self, literal: Literal) -> Result<Value, RunTimeError> {
         match literal {
             Literal::Number(n) => Ok(Value::Number(n)),
             Literal::StringLiteral(s) => Ok(Value::String(s)),
             Literal::True => Ok(Value::Boolean(true)),
             Literal::False => Ok(Value::Boolean(false)),
             Literal::Null => Ok(Value::Null),
-            _ => Err(InterpreterError::CouldNotEval(literal.to_string())),
+            _ => Err(RunTimeError::CouldNotEval(literal.to_string())),
         }
     }
 
-    fn grouping(&mut self, Expr::Grouping { exp }: crate::Expr) -> Result<Value, InterpreterError> {
+    fn grouping(&mut self, Expr::Grouping { exp }: crate::Expr) -> Result<Value, RunTimeError> {
         self.evaluate(exp)
     }
 
-    fn eval_binary(&mut self, Expr::Binary { left, op, right }: Binary) -> Result<Value, InterpreterError {
+    fn eval_binary(&mut self, Expr::Binary { left, op, right }: Binary) -> Result<Value, RunTimeError> {
         let left = match self.evaluate(*left) {
             Ok(val) => val,
             Err(e) => return Err(e),
@@ -46,7 +46,7 @@ impl<'a> Interpreter<'a> {
     fn eval_unary(
         &mut self,
         Expr::Unary { exp, op }: crate::Expr,
-    ) -> Result<Value, InterpreterError> {
+    ) -> Result<Value, RunTimeError> {
         let right = match self.evaluate(*exp) {
             Ok(val) => val,
             Err(e) => return Err(e),
@@ -58,7 +58,7 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn evaluate(&mut self, exp: Expr) -> Result<Value, InterpreterError> {
+    pub fn evaluate(&mut self, exp: Expr) -> Result<Value, RunTimeError> {
         Ok(Value::Number(1.0))
     }
 
