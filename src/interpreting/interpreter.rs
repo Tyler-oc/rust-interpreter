@@ -89,6 +89,7 @@ impl<'a> Interpreter<'a> {
                 Ok(b) => Ok(Value::Boolean(!b)),
                 Err(e) => Err(e),
             },
+            _ => Err(RunTimeError::CouldNotEval("Operator not found".to_string())),
         }
     }
 
