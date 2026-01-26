@@ -7,8 +7,8 @@ pub enum Expr {
         right: Box<Expr>,
     },
     Unary {
-        exp: Box<Expr>,
         op: UnaryOp,
+        right: Box<Expr>,
     },
     Grouping {
         exp: Box<Expr>,
@@ -56,8 +56,8 @@ impl std::fmt::Display for Expr {
             Expr::Binary { left, op, right } => {
                 write!(f, "({}{}{})", left, op, right)
             }
-            Expr::Unary { exp, op } => {
-                write!(f, "({}{})", op, exp)
+            Expr::Unary { op, right } => {
+                write!(f, "({}{})", op, right)
             }
             Expr::Grouping { exp } => {
                 write!(f, "(group {})", exp)

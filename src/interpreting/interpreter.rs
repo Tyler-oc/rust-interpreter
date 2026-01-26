@@ -4,24 +4,29 @@ use crate::{
     parsing::ast::{BinaryOp, Expr, Literal, UnaryOp},
 };
 
-struct Interpreter<'a> {
-    expr: Expr,
-}
+struct Interpreter {}
 
-impl<'a> Interpreter<'a> {
-    fn literal(&mut self, literal: Literal) -> Result<Value, RunTimeError> {
+impl Interpreter {
+    pub fn new() -> Self {
+        Interpreter {}
+    }
+
+    fn eval_literal(&mut self, literal: Literal) -> Result<Value, RunTimeError> {
         match literal {
             Literal::Number(n) => Ok(Value::Number(n)),
             Literal::StringLiteral(s) => Ok(Value::String(s)),
             Literal::True => Ok(Value::Boolean(true)),
             Literal::False => Ok(Value::Boolean(false)),
             Literal::Null => Ok(Value::Null),
-            _ => Err(RunTimeError::CouldNotEval(literal.to_string())),
+            _ => Err(RunTimeError::CouldNotEval(literal.to_string())), //just in case even though above is exhausting match
         }
     }
 
-    fn grouping(&mut self, Expr::Grouping { exp }: crate::Expr) -> Result<Value, RunTimeError> {
-        self.evaluate(exp)
+    fn eval_grouping(&mut self, expr: Expr) -> Result<Value, RunTimeError> {
+        match expr {
+            Expr::Grouping { exp } => self.evaluate(*exp),
+            _ => return Err(RunTimeError::CouldNotEval(expr.to_string())),
+        }
     }
 
     fn is_equal(&mut self, v1: Value, v2: Value) -> Result<bool, RunTimeError> {
@@ -35,17 +40,18 @@ impl<'a> Interpreter<'a> {
 
     fn eval_binary(
         &mut self,
-        Expr::Binary { left, op, right }: Binary,
+        left: Expr,
+        op: BinaryOp,
+        right: Expr,
     ) -> Result<Value, RunTimeError> {
-        let left = match self.evaluate(*left) {
-            Ok(val) => val,
+        let left = match self.evaluate(left) {
+            Ok(left) => left,
             Err(e) => return Err(e),
         };
-        let right = match self.evaluate(*right) {
-            Ok(val) => val,
+        let right = match self.evaluate(right) {
+            Ok(right) => right,
             Err(e) => return Err(e),
         };
-        //maybe go other way and match left and right types then define possible operations
         match op {
             BinaryOp::Minus => match (left, right) {
                 (Value::Number(n1), Value::Number(n2)) => Ok(Value::Number(n1 - n2)),
@@ -93,9 +99,9 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    fn eval_unary(&mut self, Expr::Unary { exp, op }: crate::Expr) -> Result<Value, RunTimeError> {
-        let right = match self.evaluate(*exp) {
-            Ok(val) => val,
+    fn eval_unary(&mut self, op: UnaryOp, right: Expr) -> Result<Value, RunTimeError> {
+        let right = match self.evaluate(right) {
+            Ok(right) => right,
             Err(e) => return Err(e),
         };
 
@@ -109,7 +115,25 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn evaluate(&mut self, exp: Expr) -> Result<Value, RunTimeError> {
-        Ok(Value::Number(1.0))
+        match exp {
+            Expr::Binary { left, op, right } => match self.eval_binary(*left, op, *right) {
+                Ok(val) => Ok(val),
+                Err(e) => return Err(e),
+            },
+            Expr::Unary { op, right } => match self.eval_unary(op, *right) {
+                Ok(val) => Ok(val),
+                Err(e) => return Err(e),
+            },
+            Expr::Grouping { exp } => match self.eval_grouping(*exp) {
+                Ok(val) => Ok(val),
+                Err(e) => return Err(e),
+            },
+            Expr::Literal(literal) => match self.eval_literal(literal) {
+                Ok(val) => Ok(val),
+                Err(e) => return Err(e),
+            },
+            _ => Err(RunTimeError::CouldNotEval(exp.to_string())),
+        }
     }
 
     fn is_truthy(&mut self, val: Value) -> bool {
@@ -119,5 +143,14 @@ impl<'a> Interpreter<'a> {
             Value::Number(0.0) => false,
             _ => true,
         }
+    }
+}
+
+pub fn interpret(exp: Expr) -> Result<Value, RunTimeError> {
+    let mut interpreter: Interpreter = Interpreter::new();
+
+    match interpreter.evaluate(exp) {
+        Ok(val) => Ok(val),
+        Err(e) => Err(e),
     }
 }

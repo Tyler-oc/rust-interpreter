@@ -121,8 +121,8 @@ impl<'a> Parser<'a> {
                 Err(err) => return Err(err),
             };
             return Ok(Expr::Unary {
-                exp: Box::new(right),
                 op: operator,
+                right: Box::new(right),
             });
         }
         self.primary()

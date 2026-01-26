@@ -9,6 +9,8 @@ use std::env;
 use std::fs;
 
 use crate::errors::interpreter_error::InterpreterError;
+use crate::interpreting::interpreter::interpret;
+use crate::interpreting::value::Value;
 use crate::parsing::ast::Expr;
 use crate::parsing::parser::parse_tokens;
 
@@ -39,6 +41,9 @@ fn run_file(program_file: &str) -> Result<(), InterpreterError> {
             let expr: Expr = parse_tokens(&tokens)?;
             print!("expression: {}", expr);
             println!("{:#?}", expr);
+
+            let result: Value = interpret(expr)?;
+            println!("result: {}", result)
         }
         Err(e) => {
             println!("Error: {e}");
@@ -70,6 +75,9 @@ fn run_prompt() -> Result<(), InterpreterError> {
     let expr: Expr = parse_tokens(&tokens)?;
     print!("expression: {}", expr);
     println!("{:#?}", expr);
+
+    let result: Value = interpret(expr)?;
+    println!("Result: {}", result);
 
     Ok(())
 }
