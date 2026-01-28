@@ -12,6 +12,7 @@ use crate::errors::interpreter_error::InterpreterError;
 use crate::interpreting::interpreter::interpret;
 use crate::interpreting::value::Value;
 use crate::parsing::ast::Expr;
+use crate::parsing::ast::Stmt;
 use crate::parsing::parser::parse_tokens;
 
 pub fn error(e: InterpreterError) {
@@ -38,12 +39,13 @@ fn run_file(program_file: &str) -> Result<(), InterpreterError> {
             for token in tokens.iter() {
                 println!("{:?}", token);
             }
-            let expr: Expr = parse_tokens(&tokens)?;
-            print!("expression: {}", expr);
-            println!("{:#?}", expr);
+            let statements: Vec<Stmt> = parse_tokens(&tokens)?;
 
-            let result: Value = interpret(expr)?;
-            println!("result: {}", result)
+            for statement in statements.iter() {
+                println!("{}", statement)
+            }
+
+            interpret(statements)?;
         }
         Err(e) => {
             println!("Error: {e}");
@@ -72,12 +74,13 @@ fn run_prompt() -> Result<(), InterpreterError> {
         println!("{:?}", token);
     }
 
-    let expr: Expr = parse_tokens(&tokens)?;
-    print!("expression: {}", expr);
-    println!("{:#?}", expr);
+    let statements: Vec<Stmt> = parse_tokens(&tokens)?;
 
-    let result: Value = interpret(expr)?;
-    println!("Result: {}", result);
+    for statement in statements.iter() {
+        println!("{}", statement)
+    }
+
+    interpret(statements)?;
 
     Ok(())
 }

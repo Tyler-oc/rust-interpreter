@@ -1,7 +1,7 @@
 use crate::{
     errors::parse_error::ParseError,
     lexing::token::{Token, TokenKind},
-    parsing::ast::{BinaryOp, Expr, Literal, UnaryOp},
+    parsing::ast::{BinaryOp, Expr, Literal, Stmt, UnaryOp},
 };
 
 struct Parser<'a> {
@@ -233,23 +233,54 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    pub fn expression(&mut self) -> Result<Expr, ParseError> {
+    fn expression(&mut self) -> Result<Expr, ParseError> {
         match self.equality() {
             Ok(e) => Ok(e),
             Err(err) => return Err(err),
         }
     }
+
+    fn expression_statement(&mut self) -> Result<Stmt, ParseError> {
+        let expr: Expr = match self.expression() {
+            Ok(e) => e,
+            Err(err) => return Err(err),
+        };
+        self.consume(TokenKind::Semicolon, "Expect ; after statement".to_string());
+        Ok(Stmt::Expression(expr))
+    }
+
+    fn print_statement(&mut self) -> Result<Stmt, ParseError> {
+        let expr: Expr = match self.expression() {
+            Ok(e) => e,
+            Err(err) => return Err(err),
+        };
+        self.consume(TokenKind::Semicolon, "Expect ; after statement".to_string());
+        Ok(Stmt::Print(expr))
+    }
+
+    pub fn statement(&mut self) -> Result<Stmt, ParseError> {
+        if self.match_token(vec![TokenKind::Print]) {
+            return match self.print_statement() {
+                Ok(s) => Ok(s),
+                Err(e) => Err(e),
+            };
+        }
+        self.expression_statement()
+    }
 }
 
-pub fn parse_tokens(tokens: &Vec<Token>) -> Result<Expr, ParseError> {
+pub fn parse_tokens(tokens: &Vec<Token>) -> Result<Vec<Stmt>, ParseError> {
     let mut parser: Parser = Parser::new(tokens);
+    let mut statements: Vec<Stmt> = Vec::new();
 
-    let expr: Expr = match parser.expression() {
-        Ok(e) => e,
-        Err(err) => return Err(err),
-    };
+    while !parser.is_at_end() {
+        match parser.statement() {
+            Ok(stmt) => statements.push(stmt),
+            Err(e) => return Err(e),
+        };
+    }
 
-    Ok(expr)
+    Ok(statements)
 }
 
 pub fn parse_binary_op(token: &Token) -> Result<BinaryOp, ParseError> {

@@ -1,7 +1,7 @@
 use crate::{
     errors::runtime_error::RunTimeError,
     interpreting::value::Value,
-    parsing::ast::{BinaryOp, Expr, Literal, UnaryOp},
+    parsing::ast::{BinaryOp, Expr, Literal, Stmt, UnaryOp},
 };
 
 struct Interpreter {}
@@ -136,6 +136,20 @@ impl Interpreter {
         }
     }
 
+    pub fn execute(&mut self, stmt: &Stmt) -> Result<(), RunTimeError> {
+        match stmt {
+            Stmt::Expression(e) => match self.evaluate(e.clone()) {
+                Ok(e) => println!("{}", e), //for testing don't acutally print though in practice
+                Err(err) => return Err(err),
+            },
+            Stmt::Print(e) => match self.evaluate(e.clone()) {
+                Ok(e) => println!("{}", e),
+                Err(err) => return Err(err),
+            },
+        }
+        Ok(())
+    }
+
     fn is_truthy(&mut self, val: Value) -> bool {
         match val {
             Value::Null => false,
@@ -146,11 +160,14 @@ impl Interpreter {
     }
 }
 
-pub fn interpret(exp: Expr) -> Result<Value, RunTimeError> {
+pub fn interpret(statements: Vec<Stmt>) -> Result<(), RunTimeError> {
     let mut interpreter: Interpreter = Interpreter::new();
 
-    match interpreter.evaluate(exp) {
-        Ok(val) => Ok(val),
-        Err(e) => Err(e),
+    for statement in statements.iter() {
+        match interpreter.execute(statement) {
+            Ok(_) => (),
+            Err(e) => return Err(e),
+        }
     }
+    Ok(())
 }

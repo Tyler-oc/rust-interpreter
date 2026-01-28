@@ -1,4 +1,10 @@
 #[derive(Debug)]
+pub enum Stmt {
+    Print(Expr),
+    Expression(Expr),
+}
+
+#[derive(Debug, Clone)]
 pub enum Expr {
     //remember to change Box to Rc (shared ownership) or Arc (multi thread)
     Binary {
@@ -13,10 +19,10 @@ pub enum Expr {
     Grouping {
         exp: Box<Expr>,
     },
-    Literal(Literal), //expect this to be a string, int, or boolean tokens
+    Literal(Literal),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BinaryOp {
     Plus,
     Minus,
@@ -33,7 +39,7 @@ pub enum BinaryOp {
     Or,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum UnaryOp {
     Bang,
     Minus,
@@ -49,6 +55,15 @@ pub enum Literal {
 }
 
 //display implementations for enums
+
+impl std::fmt::Display for Stmt {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Stmt::Expression(e) => write!(f, "{}", e),
+            Stmt::Print(e) => write!(f, "{}", e),
+        }
+    }
+}
 
 impl std::fmt::Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
