@@ -101,6 +101,9 @@ impl<'a> Parser<'a> {
                 exp: Box::new(expr),
             });
         }
+        if self.match_token(vec![TokenKind::Identifier]) {
+            return Ok(Expr::Variable(self.previous().lexeme.to_string()));
+        }
         match parse_literal(self.peek()) {
             Ok(l) => {
                 self.advance();

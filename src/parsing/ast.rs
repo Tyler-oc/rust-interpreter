@@ -21,6 +21,7 @@ pub enum Expr {
         exp: Box<Expr>,
     },
     Literal(Literal),
+    Variable(String),
 }
 
 #[derive(Debug, Clone)]
@@ -81,6 +82,9 @@ impl std::fmt::Display for Expr {
             }
             Expr::Literal(val) => {
                 write!(f, "{}", val)
+            }
+            Expr::Variable(t) => {
+                write!(f, "{}", t)
             }
         }
     }
