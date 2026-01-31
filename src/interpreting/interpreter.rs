@@ -1,14 +1,20 @@
 use crate::{
+    environment::environment::Environment,
+    errors::environment_error::EnvironmentError,
     errors::runtime_error::RunTimeError,
     interpreting::value::Value,
     parsing::ast::{BinaryOp, Expr, Literal, Stmt, UnaryOp},
 };
 
-struct Interpreter {}
+struct Interpreter {
+    environment: Environment,
+}
 
 impl Interpreter {
-    pub fn new() -> Self {
-        Interpreter {}
+    pub fn new(environment: Environment) -> Self {
+        Interpreter {
+            environment: environment,
+        }
     }
 
     fn eval_literal(&mut self, literal: Literal) -> Result<Value, RunTimeError> {
@@ -146,6 +152,13 @@ impl Interpreter {
                 Ok(e) => println!("{}", e),
                 Err(err) => return Err(err),
             },
+            Stmt::Var { name, initializer } => {
+                let val = match self.evaluate(initializer.clone()) {
+                    Ok(v) => v,
+                    Err(err) => return Err(err),
+                };
+                self.environment.define(name.to_string(), val);
+            }
         }
         Ok(())
     }
@@ -161,7 +174,8 @@ impl Interpreter {
 }
 
 pub fn interpret(statements: Vec<Stmt>) -> Result<(), RunTimeError> {
-    let mut interpreter: Interpreter = Interpreter::new();
+    let environment: Environment = Environment::new();
+    let mut interpreter: Interpreter = Interpreter::new(environment);
 
     for statement in statements.iter() {
         match interpreter.execute(statement) {

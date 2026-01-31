@@ -295,7 +295,7 @@ impl<'a> Parser<'a> {
         match initializer {
             Some(i) => Ok(Stmt::Var {
                 name: name,
-                value: i,
+                initializer: i,
             }),
             None => Err(ParseError::InvalidDeclaration(name)),
         }

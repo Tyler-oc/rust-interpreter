@@ -2,7 +2,7 @@
 pub enum Stmt {
     Print(Expr),
     Expression(Expr),
-    Var { name: String, value: Expr },
+    Var { name: String, initializer: Expr },
 }
 
 #[derive(Debug, Clone)]
@@ -63,7 +63,9 @@ impl std::fmt::Display for Stmt {
         match self {
             Stmt::Expression(e) => write!(f, "{}", e), //normally don't display anything but nice for testing
             Stmt::Print(e) => write!(f, "{}", e),
-            Stmt::Var { name, value } => write!(f, "variable {} with value {}", name, value),
+            Stmt::Var { name, initializer } => {
+                write!(f, "variable {} with value {}", name, initializer)
+            }
         }
     }
 }

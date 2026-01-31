@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{errors::environment_error::EnvironmentError, interpreting::value::Value};
 
-struct Environment {
+pub(crate) struct Environment {
     values: HashMap<String, Value>,
 }
 
