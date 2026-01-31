@@ -292,13 +292,10 @@ impl<'a> Parser<'a> {
             TokenKind::Semicolon,
             "Expect ; after declaration".to_string(),
         );
-        match initializer {
-            Some(i) => Ok(Stmt::Var {
-                name: name,
-                initializer: i,
-            }),
-            None => Err(ParseError::InvalidDeclaration(name)),
-        }
+        Ok(Stmt::Var {
+            name: name,
+            initializer: initializer,
+        })
     }
 
     pub fn declaration(&mut self) -> Result<Stmt, ParseError> {

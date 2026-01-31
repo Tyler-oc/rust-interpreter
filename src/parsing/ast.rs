@@ -1,8 +1,13 @@
+use std::fmt::write;
+
 #[derive(Debug)]
 pub enum Stmt {
     Print(Expr),
     Expression(Expr),
-    Var { name: String, initializer: Expr },
+    Var {
+        name: String,
+        initializer: Option<Expr>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -63,9 +68,10 @@ impl std::fmt::Display for Stmt {
         match self {
             Stmt::Expression(e) => write!(f, "{}", e), //normally don't display anything but nice for testing
             Stmt::Print(e) => write!(f, "{}", e),
-            Stmt::Var { name, initializer } => {
-                write!(f, "variable {} with value {}", name, initializer)
-            }
+            Stmt::Var { name, initializer } => match initializer {
+                Some(initializer) => write!(f, "variable {} with value {}", name, initializer),
+                None => write!(f, "variable {} with no assigned value", name),
+            },
         }
     }
 }

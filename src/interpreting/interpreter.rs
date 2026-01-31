@@ -153,11 +153,25 @@ impl Interpreter {
                 Err(err) => return Err(err),
             },
             Stmt::Var { name, initializer } => {
-                let val = match self.evaluate(initializer.clone()) {
-                    Ok(v) => v,
-                    Err(err) => return Err(err),
-                };
-                self.environment.define(name.to_string(), val);
+                let val;
+                match initializer {
+                    Some(initializer) => {
+                        val = match self.evaluate(initializer.clone()) {
+                            Ok(v) => Some(v),
+                            Err(err) => return Err(err),
+                        };
+                    }
+                    None => val = Some(Value::Null),
+                }
+
+                match val {
+                    Some(v) => self.environment.define(name.to_string(), v)?,
+                    None => {
+                        return Err(RunTimeError::EnvironmentError(
+                            EnvironmentError::UndefinedVariable(name.to_string()),
+                        ));
+                    }
+                }
             }
         }
         Ok(())
