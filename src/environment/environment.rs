@@ -1,23 +1,23 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::{errors::environment_error::EnvironmentError, interpreting::value::Value};
+use crate::{WrappedEnv, errors::environment_error::EnvironmentError, interpreting::value::Value};
 #[derive(Clone)]
 pub(crate) struct Environment {
-    pub(crate) values: HashMap<String, Value>,
-    pub(crate) outer_environment: Option<Box<Environment>>,
+    pub values: HashMap<String, Value>,
+    pub outer_environment: Option<WrappedEnv>,
 }
 
 impl Environment {
     pub fn new(outer_environment: Option<Environment>) -> Self {
         Environment {
             values: HashMap::new(),
-            outer_environment: outer_environment.map(Box::new),
+            outer_environment: outer_environment.map(RefCell::new).map(Rc::new),
         }
     }
 
     pub fn new_all_initialized(
         values: HashMap<String, Value>,
-        outer_environment: Option<Box<Environment>>,
+        outer_environment: Option<WrappedEnv>,
     ) -> Self {
         Environment {
             values: values,
@@ -36,30 +36,24 @@ impl Environment {
         }
     }
 
-    pub fn get(&mut self, name: String) -> Result<Value, EnvironmentError> {
-        if let Some(stored_val) = self.values.get(&name) {
+    pub fn get(&mut self, name: &str) -> Result<Value, EnvironmentError> {
+        if let Some(stored_val) = self.values.get(name) {
             return Ok(stored_val.clone());
         }
-        match &mut self.outer_environment {
-            Some(env) => return env.get(name),
-            None => return Err(EnvironmentError::UndefinedVariable(name)),
+        if let Some(ref env) = self.outer_environment {
+            return env.borrow_mut().get(name);
         }
+        Err(EnvironmentError::UndefinedVariable(name.to_string()))
     }
 
-    pub fn assign(&mut self, name: String, val: Value) -> Result<(), EnvironmentError> {
-        if let Some(stored_val) = self.values.get_mut(&name) {
+    pub fn assign(&mut self, name: &str, val: Value) -> Result<(), EnvironmentError> {
+        if let Some(stored_val) = self.values.get_mut(name) {
             *stored_val = val;
             return Ok(());
         }
-        match &mut self.outer_environment {
-            Some(env) => {
-                if let Some(outer_stored_val) = env.values.get_mut(&name) {
-                    *outer_stored_val = val;
-                    return Ok(());
-                }
-            }
-            None => return Err(EnvironmentError::UndefinedVariable(name)),
+        if let Some(ref env) = self.outer_environment {
+            return env.borrow_mut().assign(name, val);
         }
-        Err(EnvironmentError::UndefinedVariable(name))
+        Err(EnvironmentError::UndefinedVariable(name.to_string()))
     }
 }

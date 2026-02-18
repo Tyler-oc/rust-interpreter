@@ -1,5 +1,3 @@
-use std::fmt::write;
-
 use crate::lexing::token::Token;
 
 #[derive(Debug, Clone)]
@@ -11,6 +9,10 @@ pub enum Stmt {
         condition: Expr,
         then_branch: Box<Stmt>,
         else_branch: Box<Option<Stmt>>,
+    },
+    While {
+        condition: Expr,
+        body: Box<Stmt>,
     },
     Var {
         name: Token,
@@ -108,6 +110,9 @@ impl std::fmt::Display for Stmt {
                 ),
                 None => write!(f, "if {} then {}", condition, then_branch),
             },
+            Stmt::While { condition, body } => {
+                write!(f, "While {} do {}", condition, body)
+            }
             Stmt::Var { name, initializer } => match initializer {
                 Some(initializer) => {
                     write!(f, "variable {} with value {}", name.lexeme, initializer)

@@ -1,6 +1,9 @@
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
+
 use regex::CaptureNames;
 
 use crate::{
+    WrappedEnv,
     environment::environment::Environment,
     errors::{environment_error::EnvironmentError, runtime_error::RunTimeError},
     interpreting::value::Value,
@@ -9,20 +12,20 @@ use crate::{
 };
 
 struct Interpreter {
-    environment: Environment,
+    environment: WrappedEnv,
 }
 
 impl Interpreter {
-    pub fn new(environment: Environment) -> Self {
+    pub fn new(environment: WrappedEnv) -> Self {
         Interpreter {
             environment: environment,
         }
     }
 
-    fn eval_literal(&mut self, literal: Literal) -> Result<Value, RunTimeError> {
+    fn eval_literal(&mut self, literal: &Literal) -> Result<Value, RunTimeError> {
         match literal {
-            Literal::Number(n) => Ok(Value::Number(n)),
-            Literal::StringLiteral(s) => Ok(Value::String(s)),
+            Literal::Number(n) => Ok(Value::Number(*n)),
+            Literal::StringLiteral(s) => Ok(Value::String(s.clone())),
             Literal::True => Ok(Value::Boolean(true)),
             Literal::False => Ok(Value::Boolean(false)),
             Literal::Null => Ok(Value::Null),
@@ -30,9 +33,9 @@ impl Interpreter {
         }
     }
 
-    fn eval_grouping(&mut self, expr: Expr) -> Result<Value, RunTimeError> {
+    fn eval_grouping(&mut self, expr: &Expr) -> Result<Value, RunTimeError> {
         match expr {
-            Expr::Grouping { exp } => self.evaluate(*exp),
+            Expr::Grouping { exp } => self.evaluate(exp),
             _ => return Err(RunTimeError::CouldNotEval(expr.to_string())),
         }
     }
@@ -46,18 +49,20 @@ impl Interpreter {
         }
     }
 
-    fn eval_assignment(&mut self, name: Token, exp: Expr) -> Result<Value, RunTimeError> {
+    fn eval_assignment(&mut self, name: &Token, exp: &Expr) -> Result<Value, RunTimeError> {
         let value: Value = match self.evaluate(exp) {
             Ok(v) => v,
             Err(e) => return Err(e),
         };
 
-        self.environment.assign(name.lexeme, value.clone())?;
+        self.environment
+            .borrow_mut()
+            .assign(&name.lexeme, value.clone())?;
         Ok(value)
     }
 
-    fn eval_var(&mut self, name: Token) -> Result<Value, RunTimeError> {
-        match self.environment.get(name.lexeme) {
+    fn eval_var(&mut self, name: &Token) -> Result<Value, RunTimeError> {
+        match self.environment.borrow_mut().get(&name.lexeme) {
             Ok(val) => Ok(val),
             Err(e) => Err(RunTimeError::EnvironmentError(e)),
         }
@@ -65,9 +70,9 @@ impl Interpreter {
 
     fn eval_binary(
         &mut self,
-        left: Expr,
-        op: BinaryOp,
-        right: Expr,
+        left: &Expr,
+        op: &BinaryOp,
+        right: &Expr,
     ) -> Result<Value, RunTimeError> {
         let left = match self.evaluate(left) {
             Ok(left) => left,
@@ -124,7 +129,7 @@ impl Interpreter {
         }
     }
 
-    fn eval_unary(&mut self, op: UnaryOp, right: Expr) -> Result<Value, RunTimeError> {
+    fn eval_unary(&mut self, op: &UnaryOp, right: &Expr) -> Result<Value, RunTimeError> {
         let right = match self.evaluate(right) {
             Ok(right) => right,
             Err(e) => return Err(e),
@@ -141,9 +146,9 @@ impl Interpreter {
 
     fn eval_logical(
         &mut self,
-        left: Expr,
-        op: LogicalOp,
-        right: Expr,
+        left: &Expr,
+        op: &LogicalOp,
+        right: &Expr,
     ) -> Result<Value, RunTimeError> {
         let left_val = match self.evaluate(left) {
             Ok(v) => v,
@@ -167,9 +172,9 @@ impl Interpreter {
 
     fn eval_if(
         &mut self,
-        condition: Expr,
-        then_branch: Stmt,
-        else_branch: Option<Stmt>,
+        condition: &Expr,
+        then_branch: &Stmt,
+        else_branch: &Option<Stmt>,
     ) -> Result<(), RunTimeError> {
         let condition = match self.evaluate(condition) {
             Ok(e) => e,
@@ -192,46 +197,53 @@ impl Interpreter {
         Ok(())
     }
 
-    fn eval_block(
-        &mut self,
-        statements: &Vec<Stmt>,
-        environment: Environment,
-    ) -> Result<(), RunTimeError> {
-        let previous = Environment::new_all_initialized(
-            self.environment.values.clone(),
-            self.environment.outer_environment.clone(),
-        );
+    fn eval_while(&mut self, condition: &Expr, body: &Stmt) -> Result<(), RunTimeError> {
+        loop {
+            let val = self.evaluate(condition)?;
 
-        self.environment = environment;
+            if !self.is_truthy(&val) {
+                break;
+            }
 
-        for statement in statements.iter() {
-            match self.execute(statement) {
-                Ok(_) => (),
-                Err(err) => {
-                    self.environment = previous; //rollback env switch
-                    return Err(err);
-                }
-            };
+            self.execute(body)?;
         }
-        self.environment = previous;
         Ok(())
     }
 
-    pub fn evaluate(&mut self, exp: Expr) -> Result<Value, RunTimeError> {
+    fn eval_block(
+        &mut self,
+        statements: &Vec<Stmt>,
+        environment: WrappedEnv,
+    ) -> Result<(), RunTimeError> {
+        let previous = Rc::clone(&self.environment);
+
+        self.environment = environment;
+
+        let result: Result<(), RunTimeError> = (|| {
+            for statement in statements {
+                self.execute(statement)?;
+            }
+            Ok(())
+        })();
+        self.environment = previous;
+        result
+    }
+
+    pub fn evaluate(&mut self, exp: &Expr) -> Result<Value, RunTimeError> {
         match exp {
-            Expr::Binary { left, op, right } => match self.eval_binary(*left, op, *right) {
+            Expr::Binary { left, op, right } => match self.eval_binary(left, op, right) {
                 Ok(val) => Ok(val),
                 Err(e) => return Err(e),
             },
-            Expr::Unary { op, right } => match self.eval_unary(op, *right) {
+            Expr::Unary { op, right } => match self.eval_unary(op, right) {
                 Ok(val) => Ok(val),
                 Err(e) => return Err(e),
             },
-            Expr::Logical { left, op, right } => match self.eval_logical(*left, op, *right) {
+            Expr::Logical { left, op, right } => match self.eval_logical(left, op, right) {
                 Ok(val) => Ok(val),
                 Err(e) => Err(e),
             },
-            Expr::Grouping { exp } => match self.eval_grouping(*exp) {
+            Expr::Grouping { exp } => match self.eval_grouping(exp) {
                 Ok(val) => Ok(val),
                 Err(e) => return Err(e),
             },
@@ -243,7 +255,7 @@ impl Interpreter {
                 Ok(val) => Ok(val),
                 Err(e) => return Err(e),
             },
-            Expr::Assignment { name, exp } => match self.eval_assignment(name, *exp) {
+            Expr::Assignment { name, exp } => match self.eval_assignment(name, exp) {
                 Ok(val) => Ok(val),
                 Err(e) => return Err(e),
             },
@@ -253,22 +265,20 @@ impl Interpreter {
 
     pub fn execute(&mut self, stmt: &Stmt) -> Result<(), RunTimeError> {
         match stmt {
-            Stmt::Expression(e) => match self.evaluate(e.clone()) {
+            Stmt::Expression(e) => match self.evaluate(e) {
                 Ok(e) => println!("{}", e), //for testing don't acutally print though in practice
                 Err(err) => return Err(err),
             },
-            Stmt::Print(e) => match self.evaluate(e.clone()) {
+            Stmt::Print(e) => match self.evaluate(e) {
                 Ok(e) => println!("{}", e),
                 Err(err) => return Err(err),
             },
             Stmt::Block(statements) => {
-                match self.eval_block(
-                    statements,
-                    Environment::new(Some(Environment::new_all_initialized(
-                        self.environment.values.clone(),
-                        self.environment.outer_environment.clone(),
-                    ))),
-                ) {
+                let env_new = Rc::new(RefCell::new(Environment {
+                    values: HashMap::new(),
+                    outer_environment: Some(Rc::clone(&self.environment)),
+                }));
+                match self.eval_block(statements, env_new) {
                     Ok(_) => (),
                     Err(e) => return Err(e),
                 }
@@ -277,11 +287,11 @@ impl Interpreter {
                 condition,
                 then_branch,
                 else_branch,
-            } => match self.eval_if(
-                condition.clone(),
-                (**then_branch).clone(),
-                (**else_branch).clone(),
-            ) {
+            } => match self.eval_if(condition, then_branch, else_branch) {
+                Ok(_) => (),
+                Err(e) => return Err(e),
+            },
+            Stmt::While { condition, body } => match self.eval_while(condition, body) {
                 Ok(_) => (),
                 Err(e) => return Err(e),
             },
@@ -289,7 +299,7 @@ impl Interpreter {
                 let val;
                 match initializer {
                     Some(initializer) => {
-                        val = match self.evaluate(initializer.clone()) {
+                        val = match self.evaluate(initializer) {
                             Ok(v) => Some(v),
                             Err(err) => return Err(err),
                         };
@@ -298,7 +308,10 @@ impl Interpreter {
                 }
 
                 match val {
-                    Some(v) => self.environment.define(name.lexeme.to_string(), v)?,
+                    Some(v) => self
+                        .environment
+                        .borrow_mut()
+                        .define(name.lexeme.to_string(), v)?,
                     None => {
                         return Err(RunTimeError::EnvironmentError(
                             EnvironmentError::UndefinedVariable(name.lexeme.to_string()),
@@ -321,7 +334,7 @@ impl Interpreter {
 }
 
 pub fn interpret(statements: Vec<Stmt>) -> Result<(), RunTimeError> {
-    let environment: Environment = Environment::new(None);
+    let environment = Rc::new(RefCell::new(Environment::new(None)));
     let mut interpreter: Interpreter = Interpreter::new(environment);
 
     for statement in statements.iter() {

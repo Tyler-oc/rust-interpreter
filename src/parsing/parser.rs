@@ -386,6 +386,33 @@ impl<'a> Parser<'a> {
         })
     }
 
+    fn while_statement(&mut self) -> Result<Stmt, ParseError> {
+        match self.consume(TokenKind::LeftParen, "Expect ( after while".to_string()) {
+            Ok(_) => (),
+            Err(e) => return Err(e),
+        };
+
+        let condition = match self.expression() {
+            Ok(c) => c,
+            Err(e) => return Err(e),
+        };
+
+        match self.consume(TokenKind::RightParen, "Expect ) after while".to_string()) {
+            Ok(_) => (),
+            Err(e) => return Err(e),
+        };
+
+        let body = match self.statement() {
+            Ok(b) => b,
+            Err(e) => return Err(e),
+        };
+
+        Ok(Stmt::While {
+            condition: condition,
+            body: Box::new(body),
+        })
+    }
+
     fn block(&mut self) -> Result<Vec<Stmt>, ParseError> {
         let mut statements: Vec<Stmt> = Vec::new();
 
@@ -411,6 +438,12 @@ impl<'a> Parser<'a> {
         }
         if self.match_token(vec![TokenKind::Print]) {
             return match self.print_statement() {
+                Ok(s) => Ok(s),
+                Err(e) => Err(e),
+            };
+        }
+        if self.match_token(vec![TokenKind::While]) {
+            return match self.while_statement() {
                 Ok(s) => Ok(s),
                 Err(e) => Err(e),
             };

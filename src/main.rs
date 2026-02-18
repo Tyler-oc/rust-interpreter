@@ -6,15 +6,21 @@ mod parsing;
 
 use lexing::lexer::lex_program;
 use lexing::token::Token;
+use std::cell::RefCell;
 use std::env;
 use std::fs;
+use std::rc::Rc;
 
+use crate::environment::environment::Environment;
 use crate::errors::interpreter_error::InterpreterError;
 use crate::interpreting::interpreter::interpret;
 use crate::interpreting::value::Value;
 use crate::parsing::ast::Expr;
 use crate::parsing::ast::Stmt;
 use crate::parsing::parser::parse_tokens;
+
+//defining type to be used throughout the program
+type WrappedEnv = Rc<RefCell<Environment>>;
 
 pub fn error(e: InterpreterError) {
     println!("{}", e);
