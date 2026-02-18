@@ -150,7 +150,15 @@ impl Interpreter {
         paren: &Token,
         arguments: &Vec<Expr>,
     ) -> Result<Value, RunTimeError> {
-        Ok(Value::Null)
+        let evaluated_callee = self.evaluate(callee)?;
+
+        let evaluated_args: Vec<Value> = Vec::new();
+        for arg in arguments {
+            evaluated_args.push(self.evaluate(arg)?);
+        }
+
+        let function: Callable = callee;
+        Ok(function.call(self, evaluated_args))
     }
 
     fn eval_logical(
