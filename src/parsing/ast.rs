@@ -14,6 +14,12 @@ pub enum Stmt {
         condition: Expr,
         body: Box<Stmt>,
     },
+    For {
+        initializer: Box<Stmt>,
+        condition: Box<Stmt>,
+        increment: Box<Stmt>,
+        body: Box<Stmt>,
+    },
     Var {
         name: Token,
         initializer: Option<Expr>,
@@ -112,6 +118,18 @@ impl std::fmt::Display for Stmt {
             },
             Stmt::While { condition, body } => {
                 write!(f, "While {} do {}", condition, body)
+            }
+            Stmt::For {
+                initializer,
+                condition,
+                increment,
+                body,
+            } => {
+                write!(
+                    f,
+                    "For {} {} {} do {}",
+                    initializer, condition, increment, body
+                )
             }
             Stmt::Var { name, initializer } => match initializer {
                 Some(initializer) => {

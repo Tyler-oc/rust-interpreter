@@ -12,6 +12,7 @@ pub enum ParseError {
     MissingValue { val: String, line: usize },
     InvalidDeclaration(String),
     AssignmentError(Token),
+    SyntaxError(String),
 }
 
 impl std::fmt::Display for ParseError {
@@ -31,6 +32,7 @@ impl std::fmt::Display for ParseError {
             ParseError::AssignmentError(t) => {
                 write!(f, "Assignment error {} on line {}", t.lexeme, t.line)
             }
+            ParseError::SyntaxError(s) => write!(f, "{}", s),
         }
     }
 }

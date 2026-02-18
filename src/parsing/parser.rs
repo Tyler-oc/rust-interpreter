@@ -413,6 +413,60 @@ impl<'a> Parser<'a> {
         })
     }
 
+    fn for_statement(&mut self) -> Result<Stmt, ParseError> {
+        self.consume(
+            TokenKind::LeftParen,
+            "Expect ( after for declaration".to_string(),
+        )?;
+
+        let mut initializer: Option<Stmt>;
+        if self.match_token(vec![TokenKind::Semicolon]) {
+            initializer = None;
+        } else if self.match_token(vec![TokenKind::Var]) {
+            initializer = Some(self.var_declaration()?);
+        } else {
+            initializer = Some(self.expression_statement()?);
+        }
+
+        let mut condition: Option<Expr> = None;
+        if !self.check(TokenKind::Semicolon) {
+            condition = Some(self.expression()?);
+        }
+        self.consume(
+            TokenKind::Semicolon,
+            "Expect ; after loop condition".to_string(),
+        )?;
+
+        let mut increment: Option<Expr> = None;
+        if !self.check(TokenKind::Semicolon) {
+            increment = Some(self.expression()?);
+        }
+        self.consume(
+            TokenKind::RightParen,
+            "Expect ) after for loop clauses".to_string(),
+        )?;
+
+        let mut body = self.statement()?;
+
+        if !increment.is_none() {
+            body = Stmt::Block(vec![body, Stmt::Expression(increment.unwrap())])
+        }
+
+        if condition.is_none() {
+            condition = Some(Expr::Literal(Literal::True));
+        }
+        body = Stmt::While {
+            condition: condition.unwrap(),
+            body: Box::new(body),
+        };
+
+        if !initializer.is_none() {
+            body = Stmt::Block(vec![initializer.unwrap(), body]);
+        }
+
+        Ok(body)
+    }
+
     fn block(&mut self) -> Result<Vec<Stmt>, ParseError> {
         let mut statements: Vec<Stmt> = Vec::new();
 
@@ -444,6 +498,12 @@ impl<'a> Parser<'a> {
         }
         if self.match_token(vec![TokenKind::While]) {
             return match self.while_statement() {
+                Ok(s) => Ok(s),
+                Err(e) => Err(e),
+            };
+        }
+        if self.match_token(vec![TokenKind::For]) {
+            return match self.for_statement() {
                 Ok(s) => Ok(s),
                 Err(e) => Err(e),
             };

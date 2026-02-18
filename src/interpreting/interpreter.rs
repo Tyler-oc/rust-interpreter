@@ -295,6 +295,16 @@ impl Interpreter {
                 Ok(_) => (),
                 Err(e) => return Err(e),
             },
+            Stmt::For {
+                initializer: _initializer,
+                condition: _condition,
+                increment: _increment,
+                body: _body,
+            } => {
+                return Err(RunTimeError::CouldNotEval(
+                    "For loop not restructured correctly".to_string(),
+                ));
+            }
             Stmt::Var { name, initializer } => {
                 let val;
                 match initializer {
