@@ -77,6 +77,32 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn finished_call(&mut self, callee: Expr) -> Result<Expr, ParseError> {
+        let mut arguments: Vec<Expr> = Vec::new();
+        if !self.check(TokenKind::RightParen) {
+            loop {
+                arguments.push(self.expression()?);
+
+                if !self.match_token(vec![TokenKind::Comma]) {
+                    break;
+                }
+                if arguments.len() >= 255 {
+                    return Err(ParseError::SyntaxError("Too many arguments".to_string()));
+                }
+            }
+        }
+        let paren: &Token = self.consume(
+            TokenKind::RightParen,
+            "Expect ) after function call".to_string(),
+        )?;
+
+        Ok(Expr::Call {
+            callee: Box::new(callee),
+            paren: paren.clone(),
+            arguments: arguments,
+        })
+    }
+
     fn consume(&mut self, token_type: TokenKind, message: String) -> Result<&Token, ParseError> {
         if self.check(token_type) {
             return Ok(self.advance());
@@ -113,6 +139,20 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn call(&mut self) -> Result<Expr, ParseError> {
+        let mut expr: Expr = self.primary()?;
+
+        loop {
+            if self.match_token(vec![TokenKind::LeftParen]) {
+                expr = self.finished_call(expr)?;
+            } else {
+                break;
+            }
+        }
+
+        Ok(expr)
+    }
+
     fn unary(&mut self) -> Result<Expr, ParseError> {
         if self.match_token(vec![TokenKind::Bang, TokenKind::Minus]) {
             let operator: UnaryOp = match parse_unary_op(self.previous()) {
@@ -128,7 +168,7 @@ impl<'a> Parser<'a> {
                 right: Box::new(right),
             });
         }
-        self.primary()
+        self.call()
     }
 
     fn factor(&mut self) -> Result<Expr, ParseError> {

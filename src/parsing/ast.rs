@@ -38,6 +38,11 @@ pub enum Expr {
         op: UnaryOp,
         right: Box<Expr>,
     },
+    Call {
+        callee: Box<Expr>,
+        paren: Token,
+        arguments: Vec<Expr>,
+    },
     Logical {
         left: Box<Expr>,
         op: LogicalOp,
@@ -149,6 +154,22 @@ impl std::fmt::Display for Expr {
             }
             Expr::Unary { op, right } => {
                 write!(f, "({}{})", op, right)
+            }
+            Expr::Call {
+                callee,
+                paren: _paren,
+                arguments,
+            } => {
+                write!(
+                    f,
+                    "calle {} with arguments {}",
+                    callee,
+                    arguments
+                        .into_iter()
+                        .map(|s| s.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
             }
             Expr::Logical { left, op, right } => {
                 write!(f, "{}{}{}", left, op, right)

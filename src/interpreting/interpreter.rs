@@ -144,6 +144,15 @@ impl Interpreter {
         }
     }
 
+    fn eval_call(
+        &mut self,
+        callee: &Expr,
+        paren: &Token,
+        arguments: &Vec<Expr>,
+    ) -> Result<Value, RunTimeError> {
+        Ok(Value::Null)
+    }
+
     fn eval_logical(
         &mut self,
         left: &Expr,
@@ -236,6 +245,14 @@ impl Interpreter {
                 Err(e) => return Err(e),
             },
             Expr::Unary { op, right } => match self.eval_unary(op, right) {
+                Ok(val) => Ok(val),
+                Err(e) => return Err(e),
+            },
+            Expr::Call {
+                callee,
+                paren,
+                arguments,
+            } => match self.eval_call(callee, paren, arguments) {
                 Ok(val) => Ok(val),
                 Err(e) => return Err(e),
             },
