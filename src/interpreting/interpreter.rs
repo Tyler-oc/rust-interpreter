@@ -6,19 +6,23 @@ use crate::{
     WrappedEnv,
     environment::environment::Environment,
     errors::{environment_error::EnvironmentError, runtime_error::RunTimeError},
-    interpreting::value::Value,
+    interpreting::{callable::Callable, value::Value},
     lexing::token::Token,
     parsing::ast::{BinaryOp, Expr, Literal, LogicalOp, Stmt, UnaryOp},
 };
 
-struct Interpreter {
+pub struct Interpreter {
+    globals: Environment,
     environment: WrappedEnv,
 }
 
 impl Interpreter {
-    pub fn new(environment: WrappedEnv) -> Self {
+    pub fn new() -> Self {
+        let globals = Environment::new(None);
+        let global_ref = Rc::new(RefCell::new(globals.clone()));
         Interpreter {
-            environment: environment,
+            globals: globals,
+            environment: global_ref,
         }
     }
 
@@ -156,9 +160,19 @@ impl Interpreter {
         for arg in arguments {
             evaluated_args.push(self.evaluate(arg)?);
         }
+        let function;
+        if let Value::Callable(function) = evaluated_callee {
+            if arguments.len() <= function.arity() {
+                return Err(RunTimeError::CallableError(
+                    "Wrong number of function params".to_string(),
+                ));
+            }
 
-        let function: Callable = callee;
-        Ok(function.call(self, evaluated_args))
+            return function.call(self, evaluated_args);
+        }
+        Err(RunTimeError::CallableError(
+            "Can only call functions and classes".to_string(),
+        ))
     }
 
     fn eval_logical(
@@ -369,8 +383,7 @@ impl Interpreter {
 }
 
 pub fn interpret(statements: Vec<Stmt>) -> Result<(), RunTimeError> {
-    let environment = Rc::new(RefCell::new(Environment::new(None)));
-    let mut interpreter: Interpreter = Interpreter::new(environment);
+    let mut interpreter: Interpreter = Interpreter::new();
 
     for statement in statements.iter() {
         match interpreter.execute(statement) {

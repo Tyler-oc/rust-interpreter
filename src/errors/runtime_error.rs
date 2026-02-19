@@ -6,6 +6,7 @@ use crate::errors::environment_error::EnvironmentError;
 pub enum RunTimeError {
     CouldNotEval(String),
     EnvironmentError(EnvironmentError),
+    CallableError(String),
 }
 
 impl fmt::Display for RunTimeError {
@@ -13,6 +14,7 @@ impl fmt::Display for RunTimeError {
         match self {
             RunTimeError::CouldNotEval(val) => write!(f, "Could not evaluate: {}", val),
             RunTimeError::EnvironmentError(err) => write!(f, "env error: {}", err),
+            RunTimeError::CallableError(c) => write!(f, "{}", c), //more in depth later
         }
     }
 }

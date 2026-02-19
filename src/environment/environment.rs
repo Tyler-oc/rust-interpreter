@@ -1,7 +1,7 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{WrappedEnv, errors::environment_error::EnvironmentError, interpreting::value::Value};
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct Environment {
     pub values: HashMap<String, Value>,
     pub outer_environment: Option<WrappedEnv>,

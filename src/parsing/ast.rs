@@ -1,4 +1,4 @@
-use crate::lexing::token::Token;
+use crate::{WrappedEnv, lexing::token::Token};
 
 #[derive(Debug, Clone)]
 pub enum Stmt {
