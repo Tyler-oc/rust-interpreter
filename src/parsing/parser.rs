@@ -587,11 +587,70 @@ impl<'a> Parser<'a> {
         })
     }
 
+    fn fun_declaration(&mut self) -> Result<Stmt, ParseError> {
+        let name: Token = match self.consume(
+            TokenKind::LeftParen,
+            "Expect ( after function declaration".to_string(),
+        ) {
+            Ok(t) => t.clone(),
+            Err(e) => return Err(e),
+        };
+
+        let mut params: Vec<Token> = Vec::new();
+        if !self.check(TokenKind::RightParen) {
+            loop {
+                if (params.len() >= 255) {
+                    return Err(ParseError::InvalidDeclaration(
+                        "Too many params".to_string(),
+                    ));
+                }
+
+                let t = match self
+                    .consume(TokenKind::Identifier, "Expect parameter name".to_string())
+                {
+                    Ok(t) => t.clone(),
+                    Err(e) => return Err(e),
+                };
+
+                params.push(t);
+
+                if !self.match_token(vec![TokenKind::Comma]) {
+                    break;
+                }
+            }
+            self.consume(
+                TokenKind::RightParen,
+                "Expect ) after function delcaration".to_string(),
+            )?;
+        }
+
+        self.consume(
+            TokenKind::LeftBrace,
+            "Expect { when declaring function body".to_string(),
+        )?;
+        let body: Vec<Stmt> = self.block()?;
+
+        Ok(Stmt::Fun {
+            name: name,
+            params: params,
+            body: body,
+        })
+    }
+
     pub fn declaration(&mut self) -> Result<Stmt, ParseError> {
         //huge note here that this stops errors from being thrown and just evaluates what it can.
         //flaw but useful right now for checking how the program works.
         if self.match_token(vec![TokenKind::Var]) {
             match self.var_declaration() {
+                Ok(stmt) => return Ok(stmt),
+                Err(e) => {
+                    self.synchronize();
+                    return Err(e);
+                }
+            }
+        }
+        if self.match_token(vec![TokenKind::Fun]) {
+            match self.fun_declaration() {
                 Ok(stmt) => return Ok(stmt),
                 Err(e) => {
                     self.synchronize();

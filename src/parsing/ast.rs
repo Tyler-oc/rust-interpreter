@@ -24,6 +24,11 @@ pub enum Stmt {
         name: Token,
         initializer: Option<Expr>,
     },
+    Fun {
+        name: Token,
+        params: Vec<Token>,
+        body: Vec<Stmt>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -142,6 +147,13 @@ impl std::fmt::Display for Stmt {
                 }
                 None => write!(f, "variable {} with no assigned value", name.lexeme),
             },
+            Stmt::Fun {
+                name,
+                params: _params,
+                body: _body,
+            } => {
+                write!(f, "Function {} defined", name.lexeme)
+            }
         }
     }
 }
