@@ -1,3 +1,5 @@
+use std::fmt::write;
+
 use crate::{
     WrappedEnv,
     errors::runtime_error::RunTimeError,
@@ -11,6 +13,10 @@ pub enum Callable {
         declaration: Stmt,
         closure: WrappedEnv,
     },
+    Native {
+        arity: usize,
+        body: fn(Vec<Value>) -> Value,
+    },
 }
 
 impl std::fmt::Display for Callable {
@@ -20,6 +26,9 @@ impl std::fmt::Display for Callable {
                 declaration,
                 closure: _closure,
             } => write!(f, "Declaring function: {}", declaration),
+            Callable::Native { arity, body: _body } => {
+                write!(f, "Native fn with arity {}", arity)
+            }
         }
     }
 }

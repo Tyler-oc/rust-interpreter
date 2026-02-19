@@ -1,4 +1,9 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    rc::Rc,
+    time::{Instant, SystemTime, UNIX_EPOCH},
+};
 
 use regex::CaptureNames;
 
@@ -12,19 +17,24 @@ use crate::{
 };
 
 pub struct Interpreter {
-    globals: Environment,
+    globals: WrappedEnv,
     environment: WrappedEnv,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
-        let globals = Environment::new(None);
-        let global_ref = Rc::new(RefCell::new(globals.clone()));
-        Interpreter {
-            globals: globals,
-            environment: global_ref,
-        }
+        let globals = Rc::new(RefCell::new(Environment::new(None)));
+        let interpreter = Interpreter {
+            globals: Rc::clone(&globals),
+            environment: Rc::clone(&globals),
+        };
+
+        setup_globals(&interpreter.globals);
+
+        interpreter
     }
+
+    //globals
 
     fn eval_literal(&mut self, literal: &Literal) -> Result<Value, RunTimeError> {
         match literal {
@@ -391,5 +401,27 @@ pub fn interpret(statements: Vec<Stmt>) -> Result<(), RunTimeError> {
             Err(e) => return Err(e),
         }
     }
+    Ok(())
+}
+
+//setup globals
+
+fn clock(_args: Vec<Value>) -> Value {
+    let now = SystemTime::now();
+    let seconds = now
+        .duration_since(UNIX_EPOCH)
+        .expect("SystemTime went backwards")
+        .as_secs_f64();
+
+    return Value::Number(seconds);
+}
+
+pub fn setup_globals(globals: &WrappedEnv) -> Result<(), RunTimeError> {
+    let clock = Value::Callable(Callable::Native {
+        arity: 0,
+        body: clock,
+    });
+
+    globals.borrow_mut().define("clock".to_string(), clock);
     Ok(())
 }
