@@ -507,6 +507,23 @@ impl<'a> Parser<'a> {
         Ok(body)
     }
 
+    fn return_statement(&mut self) -> Result<Stmt, ParseError> {
+        let keyword: Token = self.previous().clone();
+
+        let mut value: Option<Expr> = None;
+        let void_return: bool = self.check(TokenKind::Semicolon);
+        if !void_return {
+            value = Some(self.expression()?);
+        }
+
+        self.consume(TokenKind::Semicolon, "Expect ; after return".to_string());
+
+        Ok(Stmt::Return {
+            keyword: keyword,
+            value: value.clone(),
+        })
+    }
+
     fn block(&mut self) -> Result<Vec<Stmt>, ParseError> {
         let mut statements: Vec<Stmt> = Vec::new();
 
@@ -544,6 +561,12 @@ impl<'a> Parser<'a> {
         }
         if self.match_token(vec![TokenKind::For]) {
             return match self.for_statement() {
+                Ok(s) => Ok(s),
+                Err(e) => Err(e),
+            };
+        }
+        if self.match_token(vec![TokenKind::Return]) {
+            return match self.return_statement() {
                 Ok(s) => Ok(s),
                 Err(e) => Err(e),
             };

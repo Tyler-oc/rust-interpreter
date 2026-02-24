@@ -272,6 +272,15 @@ impl Interpreter {
         }
     }
 
+    fn eval_return(&mut self, value_expr: &Option<Expr>) -> Result<(), RunTimeError> {
+        let value: Value = match value_expr {
+            Some(v) => self.evaluate(v)?,
+            None => Value::Null,
+        };
+
+        Err(RunTimeError::Return(value))
+    }
+
     pub fn eval_block(
         &mut self,
         statements: &Vec<Stmt>,
@@ -367,6 +376,14 @@ impl Interpreter {
             },
             Stmt::Fun { name, params, body } => match self.eval_fun(name, params, body) {
                 Ok(_) => (),
+                Err(e) => return Err(e),
+            },
+            Stmt::Return { keyword, value } => match self.eval_return(value) {
+                Ok(_) => {
+                    return Err(RunTimeError::CouldNotEval(
+                        "Return not evaluated".to_string(),
+                    ));
+                }
                 Err(e) => return Err(e),
             },
             Stmt::Var { name, initializer } => {

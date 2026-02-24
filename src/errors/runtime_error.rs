@@ -2,11 +2,13 @@ use std::error::Error;
 use std::fmt;
 
 use crate::errors::environment_error::EnvironmentError;
+use crate::interpreting::value::Value;
 #[derive(Debug)]
 pub enum RunTimeError {
     CouldNotEval(String),
     EnvironmentError(EnvironmentError),
     CallableError(String),
+    Return(Value),
 }
 
 impl fmt::Display for RunTimeError {
@@ -15,6 +17,7 @@ impl fmt::Display for RunTimeError {
             RunTimeError::CouldNotEval(val) => write!(f, "Could not evaluate: {}", val),
             RunTimeError::EnvironmentError(err) => write!(f, "env error: {}", err),
             RunTimeError::CallableError(c) => write!(f, "{}", c), //more in depth later
+            RunTimeError::Return(v) => write!(f, "returning {}", v),
         }
     }
 }

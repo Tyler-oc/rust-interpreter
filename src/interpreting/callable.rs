@@ -53,12 +53,16 @@ impl Callable {
                             RunTimeError::CallableError("not enough arguments".to_string())
                         })?;
 
-                        environment
+                        let _ = environment
                             .borrow_mut()
                             .define(param.lexeme.clone(), arg.clone());
                     }
 
-                    interpreter.eval_block(body, environment)?;
+                    return match interpreter.eval_block(body, environment) {
+                        Ok(_) => Ok(Value::Null),
+                        Err(RunTimeError::Return(v)) => Ok(v),
+                        Err(e) => Err(e),
+                    };
                 }
 
                 Ok(Value::Null)

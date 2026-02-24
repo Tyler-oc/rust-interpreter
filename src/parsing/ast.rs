@@ -1,4 +1,4 @@
-use crate::{WrappedEnv, lexing::token::Token};
+use crate::lexing::token::Token;
 
 #[derive(Debug, Clone)]
 pub enum Stmt {
@@ -22,6 +22,10 @@ pub enum Stmt {
         name: Token,
         params: Vec<Token>,
         body: Vec<Stmt>,
+    },
+    Return {
+        keyword: Token,
+        value: Option<Expr>,
     },
 }
 
@@ -136,6 +140,13 @@ impl std::fmt::Display for Stmt {
             } => {
                 write!(f, "Function {} defined", name.lexeme)
             }
+            Stmt::Return {
+                keyword: _keyword,
+                value,
+            } => match value {
+                Some(e) => write!(f, "return {}", e),
+                None => write!(f, "void return"),
+            },
         }
     }
 }
