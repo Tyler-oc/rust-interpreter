@@ -169,7 +169,7 @@ impl Interpreter {
             evaluated_args.push(self.evaluate(arg)?);
         }
         if let Value::Callable(function) = evaluated_callee {
-            if arguments.len() <= function.arity() {
+            if arguments.len() != function.arity() {
                 return Err(RunTimeError::CallableError(
                     "Wrong number of function params".to_string(),
                 ));

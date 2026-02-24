@@ -459,7 +459,7 @@ impl<'a> Parser<'a> {
             "Expect ( after for declaration".to_string(),
         )?;
 
-        let mut initializer: Option<Stmt>;
+        let initializer: Option<Stmt>;
         if self.match_token(vec![TokenKind::Semicolon]) {
             initializer = None;
         } else if self.match_token(vec![TokenKind::Var]) {
@@ -588,18 +588,22 @@ impl<'a> Parser<'a> {
     }
 
     fn fun_declaration(&mut self) -> Result<Stmt, ParseError> {
-        let name: Token = match self.consume(
+        let name: Token = self
+            .consume(
+                TokenKind::Identifier,
+                "Expect ( after function declaration".to_string(),
+            )?
+            .clone();
+
+        let _ = self.consume(
             TokenKind::LeftParen,
-            "Expect ( after function declaration".to_string(),
-        ) {
-            Ok(t) => t.clone(),
-            Err(e) => return Err(e),
-        };
+            "Expect ( after function name".to_string(),
+        )?;
 
         let mut params: Vec<Token> = Vec::new();
         if !self.check(TokenKind::RightParen) {
             loop {
-                if (params.len() >= 255) {
+                if params.len() >= 255 {
                     return Err(ParseError::InvalidDeclaration(
                         "Too many params".to_string(),
                     ));
