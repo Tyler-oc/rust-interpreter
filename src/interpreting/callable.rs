@@ -2,6 +2,7 @@ use std::fmt::write;
 
 use crate::{
     WrappedEnv,
+    environment::environment::Environment,
     errors::runtime_error::RunTimeError,
     interpreting::{interpreter::Interpreter, value::Value},
     parsing::ast::Stmt,
@@ -39,7 +40,37 @@ impl Callable {
         interpreter: &mut Interpreter,
         args: Vec<Value>,
     ) -> Result<Value, RunTimeError> {
-        Ok(Value::Null)
+        return match self {
+            Callable::Function {
+                declaration,
+                closure,
+            } => {
+                let environment: WrappedEnv = interpreter.globals;
+                let params = match declaration {
+                    Stmt::Fun { name, params, body } => params,
+                    _ => return Err(RunTimeError::CallableError("Params not found".to_string())),
+                };
+                let declaration_body = match declaration {
+                    Stmt::Block(b) => b,
+                    _ => {
+                        return Err(RunTimeError::CallableError(
+                            "Declaration body error".to_string(),
+                        ));
+                    }
+                };
+
+                let params_len = params.len();
+
+                for number in 0..params_len {
+                    environment
+                        .borrow_mut()
+                        .define(params.get(number)?.lexeme, args.get(number)?.clone())?;
+                }
+                interpreter.eval_block(declaration_body, environment)
+                Ok(Value::Null)
+            }
+            _ => Ok(Value::Null)
+        }
     }
 
     pub fn arity() {}

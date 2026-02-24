@@ -17,7 +17,7 @@ use crate::{
 };
 
 pub struct Interpreter {
-    globals: WrappedEnv,
+    pub globals: WrappedEnv,
     environment: WrappedEnv,
 }
 
@@ -33,8 +33,6 @@ impl Interpreter {
 
         interpreter
     }
-
-    //globals
 
     fn eval_literal(&mut self, literal: &Literal) -> Result<Value, RunTimeError> {
         match literal {
@@ -251,7 +249,7 @@ impl Interpreter {
         Ok(())
     }
 
-    fn eval_block(
+    pub fn eval_block(
         &mut self,
         statements: &Vec<Stmt>,
         environment: WrappedEnv,
