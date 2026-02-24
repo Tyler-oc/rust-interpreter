@@ -8,10 +8,10 @@ pub(crate) struct Environment {
 }
 
 impl Environment {
-    pub fn new(outer_environment: Option<Environment>) -> Self {
+    pub fn new(outer_environment: Option<WrappedEnv>) -> Self {
         Environment {
             values: HashMap::new(),
-            outer_environment: outer_environment.map(RefCell::new).map(Rc::new),
+            outer_environment: outer_environment,
         }
     }
 

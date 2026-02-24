@@ -1,4 +1,4 @@
-use std::fmt::write;
+use std::{cell::RefCell, fmt::write, rc::Rc};
 
 use crate::{
     WrappedEnv,
@@ -26,7 +26,7 @@ impl std::fmt::Display for Callable {
             Callable::Function {
                 declaration,
                 closure: _closure,
-            } => write!(f, "Declaring function: {}", declaration),
+            } => write!(f, "<fn {}>", declaration),
             Callable::Native { arity, body: _body } => {
                 write!(f, "Native fn with arity {}", arity)
             }
@@ -45,33 +45,40 @@ impl Callable {
                 declaration,
                 closure,
             } => {
-                let environment: WrappedEnv = interpreter.globals;
-                let params = match declaration {
-                    Stmt::Fun { name, params, body } => params,
-                    _ => return Err(RunTimeError::CallableError("Params not found".to_string())),
-                };
-                let declaration_body = match declaration {
-                    Stmt::Block(b) => b,
-                    _ => {
-                        return Err(RunTimeError::CallableError(
-                            "Declaration body error".to_string(),
-                        ));
+                let environment: WrappedEnv =
+                    Rc::new(RefCell::new(Environment::new(Some(Rc::clone(closure)))));
+                if let Stmt::Fun { name, params, body } = declaration {
+                    for (i, param) in params.iter().enumerate() {
+                        let arg = args.get(i).ok_or_else(|| {
+                            RunTimeError::CallableError("not enough arguments".to_string())
+                        })?;
+
+                        environment
+                            .borrow_mut()
+                            .define(param.lexeme.clone(), arg.clone());
                     }
-                };
 
-                let params_len = params.len();
-
-                for number in 0..params_len {
-                    environment
-                        .borrow_mut()
-                        .define(params.get(number)?.lexeme, args.get(number)?.clone())?;
+                    interpreter.eval_block(body, environment)?;
                 }
-                interpreter.eval_block(declaration_body, environment)
+
                 Ok(Value::Null)
             }
-            _ => Ok(Value::Null)
-        }
+            _ => Ok(Value::Null),
+        };
     }
 
-    pub fn arity() {}
+    pub fn arity(&self) -> usize {
+        match self {
+            Callable::Function {
+                declaration,
+                closure,
+            } => {
+                if let Stmt::Fun { name, params, body } = declaration {
+                    return params.len();
+                }
+                return 0;
+            }
+            Callable::Native { arity, body } => return *arity,
+        };
+    }
 }
