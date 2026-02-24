@@ -9,7 +9,7 @@ use regex::CaptureNames;
 
 use crate::{
     WrappedEnv,
-    environment::environment::Environment,
+    environment::{self, environment::Environment},
     errors::{environment_error::EnvironmentError, runtime_error::RunTimeError},
     interpreting::{callable::Callable, value::Value},
     lexing::token::Token,
@@ -29,7 +29,7 @@ impl Interpreter {
             environment: Rc::clone(&globals),
         };
 
-        setup_globals(&interpreter.globals);
+        let _ = setup_globals(&interpreter.globals);
 
         interpreter
     }
@@ -164,11 +164,10 @@ impl Interpreter {
     ) -> Result<Value, RunTimeError> {
         let evaluated_callee = self.evaluate(callee)?;
 
-        let evaluated_args: Vec<Value> = Vec::new();
+        let mut evaluated_args: Vec<Value> = Vec::new();
         for arg in arguments {
             evaluated_args.push(self.evaluate(arg)?);
         }
-        let function;
         if let Value::Callable(function) = evaluated_callee {
             if arguments.len() <= function.arity() {
                 return Err(RunTimeError::CallableError(
@@ -247,6 +246,30 @@ impl Interpreter {
             self.execute(body)?;
         }
         Ok(())
+    }
+
+    fn eval_fun(
+        &mut self,
+        name: &Token,
+        params: &Vec<Token>,
+        body: &Vec<Stmt>,
+    ) -> Result<(), RunTimeError> {
+        let function: Callable = Callable::Function {
+            declaration: Stmt::Fun {
+                name: name.clone(),
+                params: params.to_vec(),
+                body: body.to_vec(),
+            },
+            closure: Rc::clone(&self.environment),
+        };
+        match self
+            .environment
+            .borrow_mut()
+            .define(name.lexeme.clone(), Value::Callable(function.clone()))
+        {
+            Ok(_) => Ok(()),
+            Err(e) => Err(RunTimeError::EnvironmentError(e)),
+        }
     }
 
     pub fn eval_block(
@@ -342,16 +365,10 @@ impl Interpreter {
                 Ok(_) => (),
                 Err(e) => return Err(e),
             },
-            Stmt::For {
-                initializer: _initializer,
-                condition: _condition,
-                increment: _increment,
-                body: _body,
-            } => {
-                return Err(RunTimeError::CouldNotEval(
-                    "For loop not restructured correctly".to_string(),
-                ));
-            }
+            Stmt::Fun { name, params, body } => match self.eval_fun(name, params, body) {
+                Ok(_) => (),
+                Err(e) => return Err(e),
+            },
             Stmt::Var { name, initializer } => {
                 let val;
                 match initializer {
