@@ -3,6 +3,7 @@ mod errors;
 mod interpreting;
 mod lexing;
 mod parsing;
+mod resolving;
 
 use lexing::lexer::lex_program;
 use lexing::token::Token;
