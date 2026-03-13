@@ -1,6 +1,6 @@
 # Rust Interpreter
 
-A tree-walking interpreter for a custom language, implemented in Rust. This project is inspired by Crafting Interpreters.
+A tree-walking interpreter for a custom language, implemented in Rust.
 
 ## Features
 
