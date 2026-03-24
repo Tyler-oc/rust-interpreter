@@ -7,7 +7,7 @@ pub enum ResolverError {
 
 impl std::fmt::Display for ResolverError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match Self {
+        match self {
             ResolverError::ScopingError(message) => write!(f, "{}", message),
         }
     }
