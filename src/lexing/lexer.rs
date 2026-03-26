@@ -33,6 +33,9 @@ struct Lexer<'a> {
     start: usize,
     current: usize,
     line: usize,
+    column: usize,
+    start_line: usize,
+    start_column: usize,
 }
 
 impl<'a> Lexer<'a> {
@@ -43,6 +46,9 @@ impl<'a> Lexer<'a> {
             start: 0,
             current: 0,
             line: 1,
+            column: 1,
+            start_line: 0,
+            start_column: 0,
         }
     }
 
@@ -53,10 +59,14 @@ impl<'a> Lexer<'a> {
     fn advance(&mut self) -> char {
         let c = self.source.as_bytes()[self.current] as char;
         self.current += 1;
+        self.column += 1;
         c
     }
 
-    fn peek(&mut self) -> char {
+    fn peek(&self) -> char {
+        if self.is_at_end() {
+            return '\0';
+        }
         let c = self.source.as_bytes()[self.current] as char;
         c
     }
@@ -72,10 +82,11 @@ impl<'a> Lexer<'a> {
         if self.is_at_end() {
             return false;
         }
-        if self.peek() == c {
-            return true;
+        if self.peek() != c {
+            return false;
         }
-        false
+        self.advance();
+        true
     }
 
     fn add_token(&mut self, kind: TokenKind, literal: Option<Literal>) {
@@ -85,12 +96,14 @@ impl<'a> Lexer<'a> {
             kind,
             lexeme,
             literal,
-            line: self.line,
+            line: self.start_line,
+            column: self.start_column,
         })
     }
 
     fn increment_line(&mut self) {
-        self.line += 1
+        self.line += 1;
+        self.column = 1;
     }
 
     fn string(&mut self) -> Result<(), LexError> {
@@ -173,36 +186,32 @@ impl<'a> Lexer<'a> {
             ';' => self.add_token(TokenKind::Semicolon, None),
             ',' => self.add_token(TokenKind::Comma, None),
             '!' => {
-                if self.match_char('=') {
-                    self.add_token(TokenKind::BangEqual, None);
-                    self.advance();
-                } else {
-                    self.add_token(TokenKind::Bang, None);
-                }
+                let kind = match self.match_char('=') {
+                    true => TokenKind::BangEqual,
+                    false => TokenKind::Bang,
+                };
+                self.add_token(kind, None)
             }
             '=' => {
-                if self.match_char('=') {
-                    self.add_token(TokenKind::EqualEqual, None);
-                    self.advance();
-                } else {
-                    self.add_token(TokenKind::Equal, None);
-                }
+                let kind = match self.match_char('=') {
+                    true => TokenKind::EqualEqual,
+                    false => TokenKind::Equal,
+                };
+                self.add_token(kind, None)
             }
             '<' => {
-                if self.match_char('=') {
-                    self.add_token(TokenKind::LessEqual, None);
-                    self.advance();
-                } else {
-                    self.add_token(TokenKind::LessThan, None);
-                }
+                let kind = match self.match_char('=') {
+                    true => TokenKind::LessEqual,
+                    false => TokenKind::LessThan,
+                };
+                self.add_token(kind, None)
             }
             '>' => {
-                if self.match_char('=') {
-                    self.add_token(TokenKind::GreaterEqual, None);
-                    self.advance();
-                } else {
-                    self.add_token(TokenKind::GreaterThan, None);
-                }
+                let kind = match self.match_char('=') {
+                    true => TokenKind::GreaterEqual,
+                    false => TokenKind::GreaterThan,
+                };
+                self.add_token(kind, None)
             }
             '/' => {
                 if self.match_char('/') {
@@ -261,6 +270,8 @@ pub fn lex_program(source: &str) -> Result<Vec<Token>, LexError> {
 
     while !lexer.is_at_end() {
         lexer.start = lexer.current;
+        lexer.start_line = lexer.line;
+        lexer.start_column = lexer.column;
         lexer.scan_token()?;
     }
 
@@ -269,6 +280,7 @@ pub fn lex_program(source: &str) -> Result<Vec<Token>, LexError> {
         lexeme: "".to_string(),
         literal: None,
         line: lexer.line,
+        column: lexer.column,
     });
 
     Ok(lexer.tokens)

@@ -46,10 +46,11 @@ impl<'a> Resolver<'a> {
         }
     }
 
-    fn resolve_local(&mut self, expr: &Expr, name: &Token) -> Result<(), ResolverError> {
+    fn resolve_local(&mut self, _expr: &Expr, name: &Token) -> Result<(), ResolverError> {
         for (i, scope) in self.scopes.iter().enumerate().rev() {
             if scope.contains_key(&name.lexeme) {
-                self.interpreter.resolve(expr, self.scopes.len() - 1 - i)
+                self.interpreter.resolve(name, self.scopes.len() - 1 - i);
+                return Ok(());
             }
         }
         Ok(())

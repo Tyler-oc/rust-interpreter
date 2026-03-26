@@ -5,6 +5,7 @@ pub struct Token {
     pub lexeme: String,
     pub literal: Option<Literal>,
     pub line: usize,
+    pub column: usize,
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -17,7 +17,7 @@ use crate::{
 pub struct Interpreter {
     pub globals: WrappedEnv,
     environment: WrappedEnv,
-    locals: RefCell<HashMap<&Expr, usize>>,
+    locals: RefCell<HashMap<(usize, usize), usize>>,
 }
 
 impl Interpreter {
@@ -34,8 +34,9 @@ impl Interpreter {
         interpreter
     }
 
-    pub fn resolve(&mut self, expr: Expr, depth: usize) -> Result<(), RunTimeError> {
-        self.locals.borrow_mut().insert(expr, depth);
+    pub fn resolve(&self, token: &Token, depth: usize) -> Result<(), RunTimeError> {
+        let key = (token.line, token.column);
+        self.locals.borrow_mut().insert(key, depth);
         Ok(())
     }
 
