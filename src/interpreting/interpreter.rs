@@ -5,8 +5,6 @@ use std::{
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
 
-use regex::CaptureNames;
-
 use crate::{
     WrappedEnv,
     environment::{self, environment::Environment},
@@ -19,6 +17,7 @@ use crate::{
 pub struct Interpreter {
     pub globals: WrappedEnv,
     environment: WrappedEnv,
+    locals: RefCell<HashMap<&Expr, usize>>,
 }
 
 impl Interpreter {
@@ -27,11 +26,17 @@ impl Interpreter {
         let interpreter = Interpreter {
             globals: Rc::clone(&globals),
             environment: Rc::clone(&globals),
+            locals: RefCell::new(HashMap::new()),
         };
 
         let _ = setup_globals(&interpreter.globals);
 
         interpreter
+    }
+
+    pub fn resolve(&mut self, expr: Expr, depth: usize) -> Result<(), RunTimeError> {
+        self.locals.borrow_mut().insert(expr, depth);
+        Ok(())
     }
 
     fn eval_literal(&mut self, literal: &Literal) -> Result<Value, RunTimeError> {
@@ -41,7 +46,6 @@ impl Interpreter {
             Literal::True => Ok(Value::Boolean(true)),
             Literal::False => Ok(Value::Boolean(false)),
             Literal::Null => Ok(Value::Null),
-            _ => Err(RunTimeError::CouldNotEval(literal.to_string())), //just in case even though above is exhausting match
         }
     }
 
