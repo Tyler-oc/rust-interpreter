@@ -51,10 +51,7 @@ impl Interpreter {
     }
 
     fn eval_grouping(&mut self, expr: &Expr) -> Result<Value, RunTimeError> {
-        match expr {
-            Expr::Grouping { exp } => self.evaluate(exp),
-            _ => return Err(RunTimeError::CouldNotEval(expr.to_string())),
-        }
+        self.evaluate(expr)
     }
 
     fn is_equal(&mut self, v1: Value, v2: Value) -> Result<bool, RunTimeError> {
@@ -67,22 +64,33 @@ impl Interpreter {
     }
 
     fn eval_assignment(&mut self, name: &Token, exp: &Expr) -> Result<Value, RunTimeError> {
-        let value: Value = match self.evaluate(exp) {
-            Ok(v) => v,
-            Err(e) => return Err(e),
-        };
+        let value: Value = self.evaluate(exp)?;
 
-        self.environment
-            .borrow_mut()
-            .assign(&name.lexeme, value.clone())?;
+        let distance = self.locals.borrow().get(&(name.line, name.column)).copied();
+        match distance {
+            Some(d) => self
+                .environment
+                .borrow_mut()
+                .assign_at(&d, &name.lexeme, value.clone())?,
+            None => self
+                .globals
+                .borrow_mut()
+                .assign(&name.lexeme, value.clone())?,
+        };
+        Ok(value)
+    }
+
+    fn lookup_var(&mut self, name: &Token) -> Result<Value, RunTimeError> {
+        let distance = self.locals.borrow().get(&(name.line, name.column)).copied();
+        let value = match distance {
+            Some(d) => self.environment.borrow_mut().get_at(&d, &name.lexeme)?,
+            None => self.globals.borrow_mut().get(&name.lexeme)?,
+        };
         Ok(value)
     }
 
     fn eval_var(&mut self, name: &Token) -> Result<Value, RunTimeError> {
-        match self.environment.borrow_mut().get(&name.lexeme) {
-            Ok(val) => Ok(val),
-            Err(e) => Err(RunTimeError::EnvironmentError(e)),
-        }
+        self.lookup_var(name)
     }
 
     fn eval_binary(
@@ -427,18 +435,16 @@ impl Interpreter {
             _ => true,
         }
     }
-}
 
-pub fn interpret(statements: Vec<Stmt>) -> Result<(), RunTimeError> {
-    let mut interpreter: Interpreter = Interpreter::new();
-
-    for statement in statements.iter() {
-        match interpreter.execute(statement) {
-            Ok(_) => (),
-            Err(e) => return Err(e),
+    pub fn interpret(&mut self, statements: &Vec<Stmt>) -> Result<(), RunTimeError> {
+        for statement in statements.iter() {
+            match self.execute(statement) {
+                Ok(_) => (),
+                Err(e) => return Err(e),
+            }
         }
+        Ok(())
     }
-    Ok(())
 }
 
 //setup globals

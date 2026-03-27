@@ -1,6 +1,9 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::{WrappedEnv, errors::environment_error::EnvironmentError, interpreting::value::Value};
+use crate::{
+    WrappedEnv, environment, errors::environment_error::EnvironmentError,
+    interpreting::value::Value,
+};
 #[derive(Clone, Debug)]
 pub(crate) struct Environment {
     pub values: HashMap<String, Value>,
@@ -44,6 +47,53 @@ impl Environment {
             return env.borrow_mut().get(name);
         }
         Err(EnvironmentError::UndefinedVariable(name.to_string()))
+    }
+
+    pub fn get_at(&mut self, distance: &usize, name: &str) -> Result<Value, EnvironmentError> {
+        if *distance == 0 {
+            return match self.values.get(name) {
+                Some(val) => Ok(val.clone()),
+                None => Err(EnvironmentError::UndefinedVariable(name.to_string())),
+            };
+        }
+
+        let mut current_env = Rc::clone(self.outer_environment.as_ref().unwrap());
+
+        for _ in 1..*distance {
+            let next_env = Rc::clone(current_env.borrow().outer_environment.as_ref().unwrap());
+            current_env = next_env;
+        }
+        let val = current_env.borrow().values.get(name).cloned();
+
+        match val {
+            Some(v) => Ok(v),
+            None => Err(EnvironmentError::UndefinedVariable(name.to_string())),
+        }
+    }
+
+    pub fn assign_at(
+        &mut self,
+        distance: &usize,
+        name: &str,
+        val: Value,
+    ) -> Result<(), EnvironmentError> {
+        if *distance == 0 {
+            self.values.insert(name.to_string(), val);
+            return Ok(());
+        }
+
+        let mut current_env = Rc::clone(self.outer_environment.as_ref().unwrap());
+
+        for _ in 1..*distance {
+            let next_env = Rc::clone(current_env.borrow().outer_environment.as_ref().unwrap());
+            current_env = next_env;
+        }
+
+        current_env
+            .borrow_mut()
+            .values
+            .insert(name.to_string(), val);
+        Ok(())
     }
 
     pub fn assign(&mut self, name: &str, val: Value) -> Result<(), EnvironmentError> {

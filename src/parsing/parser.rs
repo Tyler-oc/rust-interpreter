@@ -516,7 +516,7 @@ impl<'a> Parser<'a> {
             value = Some(self.expression()?);
         }
 
-        self.consume(TokenKind::Semicolon, "Expect ; after return".to_string());
+        let _ = self.consume(TokenKind::Semicolon, "Expect ; after return".to_string());
 
         Ok(Stmt::Return {
             keyword: keyword,
@@ -645,11 +645,12 @@ impl<'a> Parser<'a> {
                     break;
                 }
             }
-            self.consume(
-                TokenKind::RightParen,
-                "Expect ) after function delcaration".to_string(),
-            )?;
         }
+
+        self.consume(
+            TokenKind::RightParen,
+            "Expect ) after function delcaration".to_string(),
+        )?;
 
         self.consume(
             TokenKind::LeftBrace,

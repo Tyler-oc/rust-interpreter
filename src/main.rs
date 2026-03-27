@@ -11,14 +11,16 @@ use std::cell::RefCell;
 use std::env;
 use std::fs;
 use std::rc::Rc;
+use std::time::Instant;
 
 use crate::environment::environment::Environment;
 use crate::errors::interpreter_error::InterpreterError;
-use crate::interpreting::interpreter::interpret;
+use crate::interpreting::interpreter::Interpreter;
 use crate::interpreting::value::Value;
 use crate::parsing::ast::Expr;
 use crate::parsing::ast::Stmt;
 use crate::parsing::parser::parse_tokens;
+use crate::resolving::resolver::Resolver;
 
 //defining type to be used throughout the program
 type WrappedEnv = Rc<RefCell<Environment>>;
@@ -43,17 +45,22 @@ fn run_file(program_file: &str) -> Result<(), InterpreterError> {
     match bytes {
         Ok(file_bytes) => {
             let program: std::borrow::Cow<'_, str> = String::from_utf8_lossy(&file_bytes);
+
+            let start_time = Instant::now();
+
             let tokens: Vec<Token> = lex_program(&program)?;
-            for token in tokens.iter() {
-                println!("{:?}", token);
-            }
             let statements: Vec<Stmt> = parse_tokens(&tokens)?;
 
-            for statement in statements.iter() {
-                println!("{}", statement)
-            }
+            let mut interpreter = Interpreter::new();
 
-            interpret(statements)?;
+            let mut resolver = Resolver::new(&interpreter);
+
+            resolver.resolve_stmts(&statements)?;
+
+            interpreter.interpret(&statements)?;
+
+            let duration = start_time.elapsed();
+            println!("Execution time: {:.2?}", duration);
         }
         Err(e) => {
             println!("Error: {e}");
@@ -62,33 +69,50 @@ fn run_file(program_file: &str) -> Result<(), InterpreterError> {
     Ok(())
 }
 
-//CLI listening
+// CLI listening
 fn run_prompt() -> Result<(), InterpreterError> {
-    let mut input = String::new();
+    let mut interpreter = Interpreter::new();
 
-    std::io::stdin()
-        .read_line(&mut input)
-        .expect("Failed to read line");
+    loop {
+        print!("> ");
+        use std::io::Write;
+        std::io::stdout().flush().unwrap();
 
-    let tokens: Vec<Token> = match lex_program(&input) {
-        Ok(tokens) => tokens,
-        Err(e) => {
-            error(InterpreterError::LexError(e));
-            Vec::new()
+        let mut input = String::new();
+        let bytes_read = std::io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read line");
+
+        if bytes_read == 0 {
+            break;
         }
-    };
 
-    for token in tokens.iter() {
-        println!("{:?}", token);
+        let tokens = match lex_program(&input) {
+            Ok(tokens) => tokens,
+            Err(e) => {
+                error(InterpreterError::LexError(e));
+                continue;
+            }
+        };
+
+        let statements = match parse_tokens(&tokens) {
+            Ok(stmts) => stmts,
+            Err(e) => {
+                println!("Parse Error: {}", e);
+                continue;
+            }
+        };
+
+        let mut resolver = Resolver::new(&interpreter);
+        if let Err(e) = resolver.resolve_stmts(&statements) {
+            println!("Resolve Error: {}", e);
+            continue;
+        }
+
+        if let Err(e) = interpreter.interpret(&statements) {
+            println!("Runtime Error: {}", e);
+        }
     }
-
-    let statements: Vec<Stmt> = parse_tokens(&tokens)?;
-
-    for statement in statements.iter() {
-        println!("{}", statement)
-    }
-
-    interpret(statements)?;
 
     Ok(())
 }

@@ -3,6 +3,7 @@ use std::fmt;
 
 use crate::errors::lex_error::LexError;
 use crate::errors::parse_error::ParseError;
+use crate::errors::resolver_error::ResolverError;
 use crate::errors::runtime_error::RunTimeError;
 
 #[derive(Debug)]
@@ -10,6 +11,7 @@ pub enum InterpreterError {
     LexError(LexError),
     ParseError(ParseError),
     RunTimeError(RunTimeError),
+    ResolverError(ResolverError),
 }
 
 impl std::fmt::Display for InterpreterError {
@@ -18,6 +20,7 @@ impl std::fmt::Display for InterpreterError {
             InterpreterError::LexError(e) => write!(f, "{}", e),
             InterpreterError::ParseError(e) => write!(f, "{}", e),
             InterpreterError::RunTimeError(e) => write!(f, "{}", e),
+            InterpreterError::ResolverError(e) => write!(f, "{}", e),
         }
     }
 }
@@ -28,6 +31,7 @@ impl Error for InterpreterError {
             InterpreterError::LexError(e) => Some(e),
             InterpreterError::ParseError(e) => Some(e),
             InterpreterError::RunTimeError(e) => Some(e),
+            InterpreterError::ResolverError(e) => Some(e),
         }
     }
 }
@@ -47,5 +51,11 @@ impl From<ParseError> for InterpreterError {
 impl From<RunTimeError> for InterpreterError {
     fn from(value: RunTimeError) -> Self {
         InterpreterError::RunTimeError(value)
+    }
+}
+
+impl From<ResolverError> for InterpreterError {
+    fn from(value: ResolverError) -> Self {
+        InterpreterError::ResolverError(value)
     }
 }

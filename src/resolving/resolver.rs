@@ -7,13 +7,13 @@ use crate::{
     parsing::ast::{BinaryOp, Expr, Literal, LogicalOp, Stmt, UnaryOp},
 };
 
-struct Resolver<'a> {
+pub struct Resolver<'a> {
     interpreter: &'a Interpreter,
     scopes: Vec<HashMap<String, bool>>,
 }
 
 impl<'a> Resolver<'a> {
-    pub fn new(&mut self, interpreter: &'a Interpreter) -> Self {
+    pub fn new(interpreter: &'a Interpreter) -> Self {
         Resolver {
             interpreter: interpreter,
             scopes: Vec::new(),
@@ -235,7 +235,7 @@ impl<'a> Resolver<'a> {
 
     fn resolve_stmt(&mut self, stmt: &Stmt) -> Result<(), ResolverError> {
         match stmt {
-            Stmt::Block(stmts) => self.resolve_stmts(stmts),
+            Stmt::Block(stmts) => self.resolve_block(stmts),
             Stmt::Expression(expr) => self.resolve_expr(expr),
             Stmt::Fun { name, params, body } => self.visit_function_stmt(name, params, body),
             Stmt::If {
@@ -250,7 +250,7 @@ impl<'a> Resolver<'a> {
         }
     }
 
-    fn resolve_stmts(&mut self, stmts: &Vec<Stmt>) -> Result<(), ResolverError> {
+    pub fn resolve_stmts(&mut self, stmts: &Vec<Stmt>) -> Result<(), ResolverError> {
         for stmt in stmts {
             self.resolve_stmt(stmt)?;
         }
@@ -268,17 +268,9 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    pub fn resolve_block(&mut self, block: &Stmt) -> Result<(), ResolverError> {
-        let stmt_vec = match block {
-            Stmt::Block(vec) => vec,
-            _ => {
-                return Err(ResolverError::ScopingError(
-                    "Block statement not found".to_string(),
-                ));
-            }
-        };
+    pub fn resolve_block(&mut self, stmts: &Vec<Stmt>) -> Result<(), ResolverError> {
         self.begin_scope()?;
-        self.resolve_stmts(stmt_vec)?;
+        self.resolve_stmts(stmts)?;
         self.end_scope()?;
         Ok(())
     }

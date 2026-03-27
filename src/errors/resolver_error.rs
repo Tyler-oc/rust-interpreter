@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::fmt::Display;
 
 #[derive(Debug)]
@@ -12,3 +13,5 @@ impl std::fmt::Display for ResolverError {
         }
     }
 }
+
+impl Error for ResolverError {}

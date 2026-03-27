@@ -1,8 +1,47 @@
+print "=== LOX INTERPRETER BENCHMARK ===";
+
+// ---------------------------------------------------------
+// TEST 1: Heavy Recursion (Tests function calls & returns)
+// ---------------------------------------------------------
+print "1. Calculating fib(25)...";
 fun fib(n) {
-  if (n <= 1) return n;
-  return fib(n - 2) + fib(n - 1);
+  if (n < 2) return n;
+  return fib(n - 1) + fib(n - 2);
 }
 
-for (var i = 0; i < 20; i = i + 1) {
-  print fib(i);
+// In a tree-walk interpreter, fib(25) will spawn hundreds of 
+// thousands of Environment allocations.
+print fib(25); 
+
+// ---------------------------------------------------------
+// TEST 2: Closure Allocation (Tests your Resolver & Scoping)
+// ---------------------------------------------------------
+print "2. Testing Lexical Closures (10,000 iterations)...";
+fun makeCounter() {
+  var i = 0;
+  fun count() {
+    i = i + 1;
+    return i;
+  }
+  return count;
 }
+
+var counter = makeCounter();
+var closureResult = 0;
+for (var i = 0; i < 10000; i = i + 1) {
+  closureResult = counter();
+}
+print closureResult; // Should print 10000
+
+// ---------------------------------------------------------
+// TEST 3: Loop & Arithmetic Overhead
+// ---------------------------------------------------------
+print "3. Running heavy math loop (100,000 iterations)...";
+var mathResult = 0;
+for (var i = 0; i < 100000; i = i + 1) {
+  // Tests binary expression evaluation and assignment speed
+  mathResult = mathResult + (i * 2) / 3; 
+}
+print mathResult;
+
+print "=== BENCHMARKS COMPLETE ===";
